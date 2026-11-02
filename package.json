@@ -1,0 +1,30 @@
+{
+  "name": "@local/novel-beat",
+  "version": "0.1.0",
+  "description": "决策点问询：写正文之前，把所有会改变剧情走向的节点逐条交给作者拍板，拍板结果落账并编译成细纲。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "icon.svg",
+    "README.md"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "novel",
+    "plot",
+    "plugin"
+  ],
+  "license": "MIT",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  }
+}
