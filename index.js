@@ -1,9 +1,13 @@
 /**
- * @local/novel-beat — 决策点问询（v0.1）
+ * @local/novel-beat — 决策点问询（v0.5）
  *
  * 判定规则（作者定的标准）：
  *   凡是会改变故事状态的节点，都必须由作者拍板；
  *   只描述世界（风光、温度、比喻、环境）的节点，模型自行决定。
+ *
+ * 两种起点都支持：
+ *   - 空白书：作者只给一句创意，边推演边用 append 逐层登记，拍板后再往下推；
+ *   - 已有细纲：读细纲，逐拍登记。
  *
  * 落地方式：决策点 = 会往「账本」里写一条的状态变更。
  * 拍板结果落盘到 <dir>/.dsh-novel-beat/<书>/ch<NNN>.json，
@@ -23,51 +27,65 @@ const ROOT = '.dsh-novel-beat'
  */
 const SKILL = {
   name: 'novel-beat',
-  description: '写小说正文之前用它：把细纲拆成「会改变故事走向」的决策点，每个点给出 2-4 个真分叉让作者拍板，没拍板不许往下写正文。当用户说「写第 N 章」「继续写」「生成细纲」「这一章怎么走」，或这一章涉及人物命运、关系变化、关键信息揭露、得失与承诺等剧情分叉时使用。',
-  whenToUse: '一章开写之前，或作者要先讨论剧情走向、而不是直接出正文的时候。',
+  description: '小说创作中实时拦截剧情分叉：每遇到一个会改变故事走向的节点，就登记成决策点、给出 2-4 个真分叉让作者拍板，没拍板不许往下写。空白书从一句创意开始就能用，不依赖已有大纲或细纲。当用户说「我想写一个…」「写第 N 章」「继续写」「接下来怎么发展」，或任何一次要推进剧情的时候使用。',
+  whenToUse: '任何时候要往下推进剧情——从开书的第一句创意，到续写某一章的中段。只要有"接下来发生什么"要定，就用它拦一下。',
   source: 'runtime',
   content: [
-    '# novel-beat：写正文前先拍板',
+    '# novel-beat：往下写之前先拍板',
     '',
     '## 唯一判定规则',
     '',
     '**会改变故事状态的节点，必须问作者；只描述世界的，模型自己决定。**',
     '',
-    '- 要问：谁死谁活、谁知道了什么、**信息揭露到什么程度**、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了。',
-    '- 尤其要问「这一章把这个秘密抖多少」——信息给到什么程度本身就是剧情决策，不是修辞节奏。',
+    '- 要问：谁死谁活、谁知道了什么、**信息揭露到什么程度**、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了、金手指或世界观规则变了。',
+    '- 尤其要问「这一段把这个秘密抖多少」——信息给到什么程度本身就是剧情决策，不是修辞节奏。',
     '- 不问：风、光、温度、气味、比喻、房间陈设、说话时手放在哪。',
     '- 代码层的等价说法：**凡是能往事实账本里写一条的，都是决策点。**',
     '',
-    '## 一章的标准流程',
+    '## 两种起点',
     '',
-    '1. **拆点** — beat_plan(dir, book, chapter, beats[])',
-    '   - 每个决策点的 change 必须写成「谁/什么 从 A 变成 B」，少于 4 个字会被拒绝。',
+    '**空白书（最常见）**：作者只给了一句创意、一个题材、一个金手指的念头。没有大纲、没有细纲、没有前文。',
+    '决策点不是"扫"出来的，是**在往下推演的过程中"截"出来的**——你每决定一步"接下来发生什么"，就在动手之前把这一步里变了的东西登记下来。',
+    '',
+    '**已有细纲**：先读细纲，再逐拍登记。',
+    '',
+    '## 实时拦截协议（空白书必须遵守）',
+    '',
+    '1. 作者给创意 → 先把**最上游**的分叉问掉（主角是谁 / 金手指是什么 / 开局在哪个位置 / 第一个对手是谁），一次 1–3 个，不要一口气抛十个。',
+    '2. 每拿到一个答案，用 beat_plan(append: true) 补登记下一层分叉，再问下一批。**边推边问，不要先把整章想完再回头拆。**',
+    '3. 只要"接下来写什么"里有任何一处会改变状态，就**先登记、先问**，再动笔。',
+    '4. 当某个已拍板的答案改写了上游设定（例如作者说"删掉这个金手指"），停下来告诉作者这会波及哪些已写的设定，再继续。',
+    '',
+    '## 一次推进的流程',
+    '',
+    '1. **登记** — beat_plan(dir, book, chapter, beats[], context?)',
+    '   - change 必须写成「谁/什么 从 A 变成 B」，少于 4 个字会被拒绝。',
     '   - kind 八选一：动作 / 知情 / 关系 / 得失 / 状态 / 承诺 / 时序 / 分叉。',
-    '   - **数量由节点定，没有上下限**：先扫这一章的节拍，逐拍问自己「这一拍里有几处状态变了」，有几处就列几个。节点密的长章可能十几个，节点疏的短章可能两三个，都正常。字数和它无关，别为凑数把环境描写拆成决策点。',
-    '   - 拆到一半发现后面还有漏的，用 beat_plan(append: true) 往后补，已拍板的不会动。',
-    '   - 已拍板过的章要重排，必须带 reset: true。',
+    '   - **数量由节点定，没有上下限**：节点密就多，节点疏就少。字数和它无关，别为凑数把环境描写拆成决策点。',
+    '   - 分几次登记用 append: true，已拍板的不会动；整章重排才用 reset: true。',
+    '   - 空白书第一次调用时把创意原文塞进 context，后面翻记录时能对上。',
     '',
-    '2. **查闸** — beat_gate(dir, book, chapter)',
-    '   - 返回 pass: false 时会列出还没拍板的点。**此时绝对不许写正文。**',
-    '',
-    '3. **问人** — 把每个决策点的 2-4 个选项摆给作者',
+    '2. **问人** — 把每个决策点的 2–4 个选项摆给作者（ask_user_question）',
     '   - 选项要真能改变走向，不要「他走过去 / 他慢慢走过去」这种假分叉。',
     '   - 每个选项都要写 impact：**选了之后会发生什么**——对人物和关系的影响、可能引出的后续发展、代价与后患、顺手埋下的伏笔。不是只写代价。',
     '   - **不替作者选**，不写「我建议选 A 就 A 吧」。',
     '',
-    '4. **记录** — beat_decide(dir, book, chapter, beatId, choice)',
+    '3. **记录** — beat_decide(dir, book, chapter, id, choice)',
+    '   - 作者选了你给的选项，就传它的 label；他自己写的内容就照原话传。',
+    '   - 作者自己写的内容如果否定了这个节点本身（例如"干脆删掉这个设定"），编译时会被标成「作者改写」，不会照抄原来的状态变更。',
     '',
-    '5. **过闸 → 编译** — 再次 beat_gate，通过后 beat_compile(dir, book, chapter)',
-    '   - 产出「## 本章必写场景」与「## 本章禁止偏离项」两段。',
+    '4. **查闸** — beat_gate，pass 之前**绝对不许写正文**。',
     '',
-    '6. **接回写作** — 把 beat_compile 的输出粘进 novel_outline save_chapter 的细纲；',
-    '   - 没装 novel-forge 也能用：直接把编译结果当写作约束贴进提示词。',
+    '5. **编译** — beat_compile，产出「## 本章必写场景」与「## 本章禁止偏离项」。',
+    '',
+    '6. **接回写作** — 把编译结果当写作约束；装了 novel-forge 就贴进 novel_outline save_chapter，没装就直接当提示词约束用。',
     '',
     '## 不要做的事',
     '',
     '- 不要在 gate 没通过时「先写一版看看」。',
-    '- 分批只是交互节奏（一次抛太多作者看不过来），不是数量上限：先把全部节点列全，再按章内顺序两三个一批地问。',
+    '- 不要先写完剧情再回头补问。',
     '- 不要用环境描写充当决策点凑数。',
+    '- 分批只是交互节奏（一次抛太多作者看不过来），不是数量上限。',
   ].join('\n'),
 }
 
@@ -186,11 +204,12 @@ export function apply(ctx) {
   ctx.effect(() => ctx.tools.register({
     name: 'beat_plan',
     description: [
-      '列出本章所有「会改变故事状态」的决策点，逐个等待作者拍板。写正文之前必须先调用本工具。',
+      '把「接下来这一段里会改变故事状态」的分叉登记成决策点，逐个等作者拍板。往下写正文之前必须先过这一关。',
+      '**空白书也能用**：作者只给一句创意时，先登记最上游的几个分叉，拍板后再 append 下一层，边推边问，不要先把剧情想完再回头拆。',
       '判定标准：会影响剧情走向、人物关系、信息知情、持有得失、位置状态的，一律列入；',
       '纯环境描写、比喻、氛围渲染不列入——那些模型自己决定。',
       '每个决策点必须写清 change（谁/什么 从什么变成什么），并给出 2-4 个走向不同的选项；每个选项用 impact 写清「选了会发生什么」（影响、可能的发展、代价、伏笔）。',
-      '决策点的数量**没有上下限**，由这一章实际的状态变更节点决定：节点密就多，节点疏就少。拆完发现后面还有漏的，用 append: true 继续补。',
+      '决策点的数量**没有上下限**，由实际的状态变更节点决定：节点密就多，节点疏就少。',
     ].join(''),
     parameters: {
       type: 'object',
@@ -226,6 +245,7 @@ export function apply(ctx) {
             additionalProperties: false,
           },
         },
+        context: { type: 'string', description: '可选：这一步的创作背景/创意原文（空白书第一次登记时把作者给的创意、题材、金手指念头塞进来，后续翻记录时能对上）' },
         reset: { type: 'boolean', description: '本章已有拍板记录时，传 true 才会覆盖重排' },
       },
       required: ['dir', 'book', 'chapter', 'beats'],
@@ -282,7 +302,8 @@ export function apply(ctx) {
       })
 
       const merged = append ? [...base, ...normalized] : normalized
-      const data = { book: args.book, chapter: args.chapter, beats: merged }
+      const context = String(args.context ?? '').trim() || existing?.context || null
+      const data = { book: args.book, chapter: args.chapter, context, beats: merged }
       const path = await saveChapter(args.dir, args.book, args.chapter, data)
       const summary = summarize(data)
       return { ...summary, path }
@@ -446,11 +467,18 @@ export function apply(ctx) {
       if (pending.length > 0) {
         return { markdown: '', scenes: 0, missing: pending.map((beat) => `${beat.id} ${beat.title}`) }
       }
-      const chosenImpact = (beat) => {
-        const picked = (beat.options ?? []).find((option) => option.label === beat.choice)
-        return picked?.impact ? `（走向：${picked.impact}）` : ''
+      const pickedOption = (beat) => (beat.options ?? []).find((option) => option.label === beat.choice) ?? null
+      const sceneLine = (beat) => {
+        const picked = pickedOption(beat)
+        // 作者在我们给的选项里选了一个：节点原义成立，附上走向。
+        if (picked) {
+          return `- ${beat.title}：${beat.change}${picked.impact ? `（走向：${picked.impact}）` : ''}`
+        }
+        // 作者自己写的内容 —— 可能直接否定了这个节点（如「删掉这个金手指」）。
+        // 这时绝不能照抄 change，否则细纲会自相矛盾；以拍板结果为准。
+        return `- ${beat.title}：${beat.choice}（作者改写了这个节点，原始状态变更为「${beat.change}」，以拍板为准）`
       }
-      const scenes = data.beats.map((beat) => `- ${beat.title}：${beat.change}${chosenImpact(beat)}`)
+      const scenes = data.beats.map(sceneLine)
       const forbidden = data.beats.map((beat) => `- 不得改写已拍板决策：${beat.title} → ${beat.choice}`)
       const markdown = [
         '## 本章必写场景',
