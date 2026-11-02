@@ -17,6 +17,56 @@ export const inject = ['tools']
 const KINDS = ['动作', '知情', '关系', '得失', '状态', '承诺', '时序', '分叉']
 const ROOT = '.dsh-novel-beat'
 
+/**
+ * 随插件一起安装的技能：让模型自己想起来「该用它」。
+ * 注册进 skills 服务的 runtime 层，装完插件即生效，不需要额外安装任何东西。
+ */
+const SKILL = {
+  name: 'novel-beat',
+  description: '写小说正文之前用它：把细纲拆成「会改变故事走向」的决策点，每个点给出 2-4 个真分叉让作者拍板，没拍板不许往下写正文。当用户说「写第 N 章」「继续写」「生成细纲」「这一章怎么走」，或这一章涉及人物命运、关系变化、关键信息揭露、得失与承诺等剧情分叉时使用。',
+  whenToUse: '一章开写之前，或作者要先讨论剧情走向、而不是直接出正文的时候。',
+  source: 'runtime',
+  content: [
+    '# novel-beat：写正文前先拍板',
+    '',
+    '## 唯一判定规则',
+    '',
+    '**会改变故事状态的节点，必须问作者；只描述世界的，模型自己决定。**',
+    '',
+    '- 要问：谁死谁活、谁知道了什么、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了。',
+    '- 不问：风、光、温度、气味、比喻、房间陈设、说话时手放在哪。',
+    '- 代码层的等价说法：**凡是能往事实账本里写一条的，都是决策点。**',
+    '',
+    '## 一章的标准流程',
+    '',
+    '1. **拆点** — beat_plan(dir, book, chapter, beats[])',
+    '   - 每个决策点的 change 必须写成「谁/什么 从 A 变成 B」，少于 4 个字会被拒绝。',
+    '   - kind 八选一：动作 / 知情 / 关系 / 得失 / 状态 / 承诺 / 时序 / 分叉。',
+    '   - 已拍板过的章要重排，必须带 reset: true。',
+    '',
+    '2. **查闸** — beat_gate(dir, book, chapter)',
+    '   - 返回 pass: false 时会列出还没拍板的点。**此时绝对不许写正文。**',
+    '',
+    '3. **问人** — 把每个决策点的 2-4 个选项摆给作者',
+    '   - 选项要真能改变走向，不要「他走过去 / 他慢慢走过去」这种假分叉。',
+    '   - **不替作者选**，不写「我建议选 A 就 A 吧」。',
+    '',
+    '4. **记录** — beat_decide(dir, book, chapter, beatId, choice)',
+    '',
+    '5. **过闸 → 编译** — 再次 beat_gate，通过后 beat_compile(dir, book, chapter)',
+    '   - 产出「## 本章必写场景」与「## 本章禁止偏离项」两段。',
+    '',
+    '6. **接回写作** — 把 beat_compile 的输出粘进 novel_outline save_chapter 的细纲；',
+    '   - 没装 novel-forge 也能用：直接把编译结果当写作约束贴进提示词。',
+    '',
+    '## 不要做的事',
+    '',
+    '- 不要在 gate 没通过时「先写一版看看」。',
+    '- 不要一次把所有决策点全抛给作者（超过 5 个先按章内顺序分批）。',
+    '- 不要用环境描写充当决策点凑数。',
+  ].join('\n'),
+}
+
 const toText = (value) => [{
   type: 'text',
   text: typeof value === 'string' ? value : JSON.stringify(value, null, 2),
@@ -396,4 +446,10 @@ export function apply(ctx) {
       return { markdown, scenes: data.beats.length, missing: [] }
     },
   }))
+
+  // 技能随插件安装即生效；skills 服务不存在时静默跳过，不让整个插件挂掉。
+  const skills = ctx.get('skills')
+  if (skills) {
+    ctx.effect(() => skills.register(SKILL))
+  }
 }
