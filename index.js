@@ -33,7 +33,8 @@ const SKILL = {
     '',
     '**会改变故事状态的节点，必须问作者；只描述世界的，模型自己决定。**',
     '',
-    '- 要问：谁死谁活、谁知道了什么、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了。',
+    '- 要问：谁死谁活、谁知道了什么、**信息揭露到什么程度**、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了。',
+    '- 尤其要问「这一章把这个秘密抖多少」——信息给到什么程度本身就是剧情决策，不是修辞节奏。',
     '- 不问：风、光、温度、气味、比喻、房间陈设、说话时手放在哪。',
     '- 代码层的等价说法：**凡是能往事实账本里写一条的，都是决策点。**',
     '',
@@ -42,6 +43,7 @@ const SKILL = {
     '1. **拆点** — beat_plan(dir, book, chapter, beats[])',
     '   - 每个决策点的 change 必须写成「谁/什么 从 A 变成 B」，少于 4 个字会被拒绝。',
     '   - kind 八选一：动作 / 知情 / 关系 / 得失 / 状态 / 承诺 / 时序 / 分叉。',
+    '   - **密度**：必须传 wordTarget（本章预估字数），决策点下限 = ceil(wordTarget ÷ 400)，且不少于 6 个。2300 字的章至少要 6 个；凑不够就把细纲里没写死的地方继续拆（信息抖多少、谁先知道、关系往哪偏、时间提前还是推后）。',
     '   - 已拍板过的章要重排，必须带 reset: true。',
     '',
     '2. **查闸** — beat_gate(dir, book, chapter)',
@@ -49,6 +51,7 @@ const SKILL = {
     '',
     '3. **问人** — 把每个决策点的 2-4 个选项摆给作者',
     '   - 选项要真能改变走向，不要「他走过去 / 他慢慢走过去」这种假分叉。',
+    '   - 每个选项都要写 impact：**选了之后会发生什么**——对人物和关系的影响、可能引出的后续发展、代价与后患、顺手埋下的伏笔。不是只写代价。',
     '   - **不替作者选**，不写「我建议选 A 就 A 吧」。',
     '',
     '4. **记录** — beat_decide(dir, book, chapter, beatId, choice)',
@@ -62,7 +65,7 @@ const SKILL = {
     '## 不要做的事',
     '',
     '- 不要在 gate 没通过时「先写一版看看」。',
-    '- 不要一次把所有决策点全抛给作者（超过 5 个先按章内顺序分批）。',
+    '- 不要一次把所有决策点全抛给作者（超过 8 个先按章内顺序分批）。',
     '- 不要用环境描写充当决策点凑数。',
   ].join('\n'),
 }
@@ -185,7 +188,8 @@ export function apply(ctx) {
       '列出本章所有「会改变故事状态」的决策点，逐个等待作者拍板。写正文之前必须先调用本工具。',
       '判定标准：会影响剧情走向、人物关系、信息知情、持有得失、位置状态的，一律列入；',
       '纯环境描写、比喻、氛围渲染不列入——那些模型自己决定。',
-      '每个决策点必须写清 change（谁/什么 从什么变成什么），并给出 2-4 个有代价差异的选项，或 1 个选项+自由填写。',
+      '每个决策点必须写清 change（谁/什么 从什么变成什么），并给出 2-4 个走向不同的选项；每个选项用 impact 写清「选了会发生什么」（影响、可能的发展、代价、伏笔）。',
+      '必须传 wordTarget：决策点数量下限 = ceil(wordTarget ÷ 400) 且不少于 6 个，不够会被拒绝。',
     ].join(''),
     parameters: {
       type: 'object',
@@ -193,6 +197,7 @@ export function apply(ctx) {
         dir: { type: 'string', description: '工作区目录（绝对路径），决策点记录落在其下的 .dsh-novel-beat/ 里' },
         book: { type: 'string', description: '书名' },
         chapter: { type: 'number', description: '章号' },
+        wordTarget: { type: 'number', description: '本章预估字数。决策点下限 = ceil(wordTarget ÷ 400) 且不少于 6 个；不够会被拒绝' },
         beats: {
           type: 'array',
           description: '决策点列表，按剧情顺序排列',
@@ -204,12 +209,12 @@ export function apply(ctx) {
               change: { type: 'string', description: '这一拍会改变什么状态。写清「谁/什么 从 A 变成 B」，写不出状态变更的就不该列入' },
               options: {
                 type: 'array',
-                description: '给作者的选项，2-4 个；每个都要有代价，不能是等价选项',
+                description: '给作者的选项，2-4 个；每个都要有 impact，不能是等价选项',
                 items: {
                   type: 'object',
                   properties: {
                     label: { type: 'string', description: '选项描述' },
-                    cost: { type: 'string', description: '选它的代价/后果（节奏、人物、伏笔、下一章要还的债）' },
+                    impact: { type: 'string', description: '选了它会发生什么：对人物/关系/节奏的影响、可能引出的后续发展、代价与后患、埋下的伏笔（一段话写全，不要只写代价）' },
                   },
                   required: ['label'],
                   additionalProperties: false,
@@ -222,7 +227,7 @@ export function apply(ctx) {
         },
         reset: { type: 'boolean', description: '本章已有拍板记录时，传 true 才会覆盖重排' },
       },
-      required: ['dir', 'book', 'chapter', 'beats'],
+      required: ['dir', 'book', 'chapter', 'wordTarget', 'beats'],
       additionalProperties: false,
     },
     output: {
@@ -236,6 +241,18 @@ export function apply(ctx) {
     async execute(args) {
       const beats = Array.isArray(args.beats) ? args.beats : []
       if (beats.length === 0) throw new Error('beats 不能为空：本章至少要有一个会改变剧情走向的决策点')
+
+      const wordTarget = Number(args.wordTarget)
+      if (!Number.isFinite(wordTarget) || wordTarget <= 0) {
+        throw new Error('必须给 wordTarget（本章预估字数）：决策点数量按它算，没它没法保证密度')
+      }
+      const minBeats = Math.max(6, Math.ceil(wordTarget / 400))
+      if (beats.length < minBeats) {
+        throw new Error(
+          `${wordTarget} 字的章只列了 ${beats.length} 个决策点，下限是 ${minBeats} 个。` +
+          '把细纲里没写死的地方继续拆：信息抖到什么程度、谁先知道、关系往哪偏、时间提前还是推后。别拿环境描写凑数。',
+        )
+      }
 
       const existing = await loadChapter(args.dir, args.book, args.chapter)
       if (existing && existing.beats?.some((beat) => beat.status === 'decided') && args.reset !== true) {
@@ -253,6 +270,10 @@ export function apply(ctx) {
           throw new Error(`决策点「${title}」的 change 太短：必须写清「谁/什么 从 A 变成 B」，写不出状态变更的节点不该列入`)
         }
         const options = Array.isArray(beat.options) ? beat.options : []
+        const readImpact = (option) => String(option?.impact ?? option?.cost ?? '').trim()
+        if (options.length > 0 && options.some((option) => !readImpact(option))) {
+          throw new Error(`决策点「${title}」有选项没写 impact：每个选项都要说清「选了会发生什么」`)
+        }
         return {
           id: `b${index + 1}`,
           title,
@@ -260,7 +281,7 @@ export function apply(ctx) {
           change,
           options: options.map((option) => ({
             label: String(option?.label ?? '').trim(),
-            cost: option?.cost ? String(option.cost).trim() : '',
+            impact: readImpact(option),
           })).filter((option) => option.label),
           status: 'pending',
           choice: null,
@@ -433,7 +454,11 @@ export function apply(ctx) {
       if (pending.length > 0) {
         return { markdown: '', scenes: 0, missing: pending.map((beat) => `${beat.id} ${beat.title}`) }
       }
-      const scenes = data.beats.map((beat) => `- ${beat.title}：${beat.change}`)
+      const chosenImpact = (beat) => {
+        const picked = (beat.options ?? []).find((option) => option.label === beat.choice)
+        return picked?.impact ? `（走向：${picked.impact}）` : ''
+      }
+      const scenes = data.beats.map((beat) => `- ${beat.title}：${beat.change}${chosenImpact(beat)}`)
       const forbidden = data.beats.map((beat) => `- 不得改写已拍板决策：${beat.title} → ${beat.choice}`)
       const markdown = [
         '## 本章必写场景',
