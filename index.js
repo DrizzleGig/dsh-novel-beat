@@ -43,7 +43,8 @@ const SKILL = {
     '1. **拆点** — beat_plan(dir, book, chapter, beats[])',
     '   - 每个决策点的 change 必须写成「谁/什么 从 A 变成 B」，少于 4 个字会被拒绝。',
     '   - kind 八选一：动作 / 知情 / 关系 / 得失 / 状态 / 承诺 / 时序 / 分叉。',
-    '   - **密度**：必须传 wordTarget（本章预估字数），决策点下限 = ceil(wordTarget ÷ 400)，且不少于 6 个。2300 字的章至少要 6 个；凑不够就把细纲里没写死的地方继续拆（信息抖多少、谁先知道、关系往哪偏、时间提前还是推后）。',
+    '   - **数量由节点定，没有上下限**：先扫这一章的节拍，逐拍问自己「这一拍里有几处状态变了」，有几处就列几个。节点密的长章可能十几个，节点疏的短章可能两三个，都正常。字数和它无关，别为凑数把环境描写拆成决策点。',
+    '   - 拆到一半发现后面还有漏的，用 beat_plan(append: true) 往后补，已拍板的不会动。',
     '   - 已拍板过的章要重排，必须带 reset: true。',
     '',
     '2. **查闸** — beat_gate(dir, book, chapter)',
@@ -65,7 +66,7 @@ const SKILL = {
     '## 不要做的事',
     '',
     '- 不要在 gate 没通过时「先写一版看看」。',
-    '- 不要一次把所有决策点全抛给作者（超过 8 个先按章内顺序分批）。',
+    '- 分批只是交互节奏（一次抛太多作者看不过来），不是数量上限：先把全部节点列全，再按章内顺序两三个一批地问。',
     '- 不要用环境描写充当决策点凑数。',
   ].join('\n'),
 }
@@ -189,7 +190,7 @@ export function apply(ctx) {
       '判定标准：会影响剧情走向、人物关系、信息知情、持有得失、位置状态的，一律列入；',
       '纯环境描写、比喻、氛围渲染不列入——那些模型自己决定。',
       '每个决策点必须写清 change（谁/什么 从什么变成什么），并给出 2-4 个走向不同的选项；每个选项用 impact 写清「选了会发生什么」（影响、可能的发展、代价、伏笔）。',
-      '必须传 wordTarget：决策点数量下限 = ceil(wordTarget ÷ 400) 且不少于 6 个，不够会被拒绝。',
+      '决策点的数量**没有上下限**，由这一章实际的状态变更节点决定：节点密就多，节点疏就少。拆完发现后面还有漏的，用 append: true 继续补。',
     ].join(''),
     parameters: {
       type: 'object',
@@ -197,7 +198,7 @@ export function apply(ctx) {
         dir: { type: 'string', description: '工作区目录（绝对路径），决策点记录落在其下的 .dsh-novel-beat/ 里' },
         book: { type: 'string', description: '书名' },
         chapter: { type: 'number', description: '章号' },
-        wordTarget: { type: 'number', description: '本章预估字数。决策点下限 = ceil(wordTarget ÷ 400) 且不少于 6 个；不够会被拒绝' },
+        append: { type: 'boolean', description: '往已有清单末尾追加（不动已拍板的），用来逐个补点。数量由本章实际的状态变更节点决定，没有上下限' },
         beats: {
           type: 'array',
           description: '决策点列表，按剧情顺序排列',
@@ -227,7 +228,7 @@ export function apply(ctx) {
         },
         reset: { type: 'boolean', description: '本章已有拍板记录时，传 true 才会覆盖重排' },
       },
-      required: ['dir', 'book', 'chapter', 'wordTarget', 'beats'],
+      required: ['dir', 'book', 'chapter', 'beats'],
       additionalProperties: false,
     },
     output: {
@@ -242,25 +243,15 @@ export function apply(ctx) {
       const beats = Array.isArray(args.beats) ? args.beats : []
       if (beats.length === 0) throw new Error('beats 不能为空：本章至少要有一个会改变剧情走向的决策点')
 
-      const wordTarget = Number(args.wordTarget)
-      if (!Number.isFinite(wordTarget) || wordTarget <= 0) {
-        throw new Error('必须给 wordTarget（本章预估字数）：决策点数量按它算，没它没法保证密度')
-      }
-      const minBeats = Math.max(6, Math.ceil(wordTarget / 400))
-      if (beats.length < minBeats) {
-        throw new Error(
-          `${wordTarget} 字的章只列了 ${beats.length} 个决策点，下限是 ${minBeats} 个。` +
-          '把细纲里没写死的地方继续拆：信息抖到什么程度、谁先知道、关系往哪偏、时间提前还是推后。别拿环境描写凑数。',
-        )
-      }
-
       const existing = await loadChapter(args.dir, args.book, args.chapter)
-      if (existing && existing.beats?.some((beat) => beat.status === 'decided') && args.reset !== true) {
+      const append = args.append === true && existing != null
+      if (existing && !append && existing.beats?.some((beat) => beat.status === 'decided') && args.reset !== true) {
         throw new Error(
           `第 ${args.chapter} 章已有拍板记录（${existing.beats.filter((b) => b.status === 'decided').length} 条），` +
-          '重新列清单会丢掉作者已经拍过的板。确认要重排请传 reset: true。',
+          '重新列清单会丢掉作者已经拍过的板。要往后补点请传 append: true；确认整章重排请传 reset: true。',
         )
       }
+      const base = append ? (existing.beats ?? []) : []
 
       const normalized = beats.map((beat, index) => {
         const title = String(beat.title ?? '').trim()
@@ -275,7 +266,7 @@ export function apply(ctx) {
           throw new Error(`决策点「${title}」有选项没写 impact：每个选项都要说清「选了会发生什么」`)
         }
         return {
-          id: `b${index + 1}`,
+          id: `b${base.length + index + 1}`,
           title,
           kind: beat.kind ?? '动作',
           change,
@@ -290,7 +281,8 @@ export function apply(ctx) {
         }
       })
 
-      const data = { book: args.book, chapter: args.chapter, beats: normalized }
+      const merged = append ? [...base, ...normalized] : normalized
+      const data = { book: args.book, chapter: args.chapter, beats: merged }
       const path = await saveChapter(args.dir, args.book, args.chapter, data)
       const summary = summarize(data)
       return { ...summary, path }
