@@ -1,4 +1,4 @@
-# @local/novel-beat
+# dsh-novel-beat
 
 **决策点问询**：写正文之前，把所有会改变剧情走向的节点逐条交给作者拍板。
 
@@ -61,12 +61,14 @@ novel_write_chapter
 <工作区>/.dsh-novel-beat/<书名>/ch012.json
 ```
 
-每章一个文件，包含全部决策点的选项、代价、作者选择、拍板时间。
+每章一个文件，包含全部决策点的选项、影响与发展、作者选择、拍板时间。
+
+**不依赖任何其他插件**：五个工具只读写自己这个目录，不需要 novel-forge、不需要已有大纲或细纲。装了 novel-forge 可以把 `beat_compile` 的结果直接塞进 `novel_outline save_chapter`；没装就把它当写作提纲用，一样能走完。
 
 ## 安装
 
 ```powershell
 # 改完代码要「先卸再装」才会重载
-plugin_manager remove_bundle  target=@local/novel-beat
+plugin_manager remove_bundle  target=dsh-novel-beat
 plugin_manager install_bundle target=D:\插件\plugins\novel-beat
 ```
