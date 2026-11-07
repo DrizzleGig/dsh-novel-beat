@@ -1,15 +1,22 @@
 {
   "name": "dsh-novel-beat",
-  "version": "0.5.0",
-  "description": "决策点问询：每遇到一个会改变剧情走向的节点就交给作者拍板（含信息揭露程度），数量由实际节点密度决定、无上下限；空白书从一句创意开始就能用，边推演边拦截；每个选项写清选了会发生什么，拍板结果落账并编译成细纲。",
+  "version": "0.6.0",
+  "description": "作者拍板 + 全书确定性账本：会改变剧情走向的节点登记 2–4 个真分叉让作者拍板；决策写入 canon/义务，下一章可见，写后 beat_verify 校验；默认关闭、会话级开关，不依赖其他插件。",
   "type": "module",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
-    "./icon": "./icon.svg"
+    "./icon": "./icon.svg",
+    "./client": "./client.js",
+    "./remote": "./lib/remote.js"
+  },
+  "scripts": {
+    "test": "node --test"
   },
   "files": [
     "index.js",
+    "client.js",
+    "lib",
     "cordis.patch.yml",
     "icon.svg",
     "README.md",
@@ -25,6 +32,18 @@
   ],
   "license": "MIT",
   "author": "DrizzleGig",
+  "peerDependencies": {
+    "@deepseek-ai/dsh-session": "*",
+    "@deepseek-ai/dsh-typert-protocol": "*"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-session": {
+      "optional": true
+    },
+    "@deepseek-ai/dsh-typert-protocol": {
+      "optional": true
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/DrizzleGig/dsh-novel-beat.git"
@@ -36,6 +55,16 @@
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-connection",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-ui-commands",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
     }
   }
 }

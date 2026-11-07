@@ -1,3 +1,5 @@
 - insert:
     - id: novel-beat
       name: 'dsh-novel-beat'
+    - id: novel-beat-remote
+      name: 'dsh-novel-beat/remote'
