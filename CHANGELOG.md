@@ -41,7 +41,7 @@
 - 插件不接管正文、不写章节文件；正文由宿主模型写，作者自己保存。
 - 0.6.0 需要重启 DSH 才会加载新的 Host/Client JS 生成。
 
-## 0.5.0 — 2026-10
+## 0.5.0 — 2026-11-02
 
 - 五个工具（`beat_plan` / `beat_list` / `beat_decide` / `beat_gate` / `beat_compile`）。
 - 每章一个 `chNNN.json`；空白书实时拦截；结果编译成 novel-forge 的细纲格式。
