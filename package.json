@@ -1,14 +1,15 @@
 {
   "name": "dsh-novel-beat",
   "version": "0.6.0",
-  "description": "作者拍板 + 全书确定性账本：会改变剧情走向的节点登记 2–4 个真分叉让作者拍板；决策写入 canon/义务，下一章可见，写后 beat_verify 校验；默认关闭、会话级开关，不依赖其他插件。",
+  "description": "每一处关键，都由你拍板。正文之前拦下会改变剧情走向的节点，每个给你 2–4 个真分叉；拍板写进全书账本，下一章记得，写完还能验。更好的创作，不依赖其他插件。",
   "type": "module",
   "main": "index.js",
   "exports": {
     ".": "./index.js",
     "./icon": "./icon.svg",
     "./client": "./client.js",
-    "./remote": "./lib/remote.js"
+    "./remote": "./lib/remote.js",
+    "./locale/*.json": "./locale/*.json"
   },
   "scripts": {
     "test": "node --test"
@@ -17,6 +18,7 @@
     "index.js",
     "client.js",
     "lib",
+    "locale",
     "cordis.patch.yml",
     "icon.svg",
     "README.md",
@@ -27,7 +29,10 @@
     "deepseek-harness",
     "dsh-plugin",
     "novel",
+    "novel-writing",
+    "ai-writing",
     "plot",
+    "worldbuilding",
     "workflow"
   ],
   "license": "MIT",
