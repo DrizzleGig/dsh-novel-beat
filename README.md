@@ -334,7 +334,7 @@ pass: false
 
 ## 喜欢它？
 
-喜欢「拍板」？如果它帮你在 AI 写作过程中掌握关键剧情的决定权，并在写完后检查剧情是否落实，欢迎在 GitHub 点亮 ⭐。也欢迎提交 Issue 或 PR，一起让它变得更好。
+喜欢「拍板」？如果它帮你在 AI 写作过程中掌握关键剧情的决定权，并在写完后检查剧情是否落实，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-beat) 点亮 ⭐。也欢迎提交 [Issue](https://github.com/DrizzleGig/dsh-novel-beat/issues) 或 PR，一起让它变得更好。
 
 ## 许可证
 
