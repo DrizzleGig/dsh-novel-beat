@@ -2,9 +2,9 @@
 
 > AI 可以替你写故事，但不能替你决定故事怎么走。
 
-![npm version](https://img.shields.io/npm/v/dsh-novel-beat)
-![license](https://img.shields.io/badge/license-MIT-blue)
-![stars](https://img.shields.io/github/stars/DrizzleGig/dsh-novel-beat)
+[![npm version](https://img.shields.io/npm/v/dsh-novel-beat)](https://www.npmjs.com/package/dsh-novel-beat)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/DrizzleGig/dsh-novel-beat/blob/main/LICENSE)
+[![stars](https://img.shields.io/github/stars/DrizzleGig/dsh-novel-beat)](https://github.com/DrizzleGig/dsh-novel-beat/stargazers)
 
 一个面向 AI 小说写作的剧情决策插件：AI 写作过程中，遇到会改变故事走向的节点时暂停下来，把不同走向和代价交给作者选择；拍板后继续写作，写完再核对关键剧情有没有落实。
 
