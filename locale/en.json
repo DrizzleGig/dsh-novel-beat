@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Beat",
-    "description": "Every key turn is yours to call. Before the prose, stop at every fork that changes the plot; get 2–4 real choices; your pick goes into a book-wide ledger, and the next chapter remembers it. Better stories start with your call. Off by default; no other plugins required."
+    "description": "Does AI sometimes take over your story and decide the plot for you? DSH Novel Beat pauses at key turning points, waits for your call, and continues writing only after you choose. Off by default; it never writes your prose."
   }
 }
