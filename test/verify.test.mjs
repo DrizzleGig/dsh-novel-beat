@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { DECISION_STATUS } from '../lib/schema.js';
 import assert from 'node:assert/strict';
 import { verifyChapter } from '../lib/verify.js';
 
@@ -8,7 +9,7 @@ const decided = {
   title: '玉佩怎么到手',
   kind: '得失',
   change: '玉佩 从 拍卖品 变成 林砚持有',
-  status: 'decided',
+  status: DECISION_STATUS.COMMITTED,
   legacy: false,
   chosen: {
     label: '拍卖会竞价拍下',
@@ -67,7 +68,7 @@ test('命中禁项 → forbidden-hit failure', () => {
 });
 
 test('未拍板 → not-decided failure', () => {
-  const pending = { ...decided, status: 'pending', chosen: null };
+  const pending = { ...decided, status: DECISION_STATUS.PROPOSED, chosen: null };
   const result = verifyChapter(make({ decision: pending }), 1, '随便写点。');
 
   assert.equal(result.pass, false);

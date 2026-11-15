@@ -32,9 +32,11 @@ function makeContext({ mount } = {}) {
   const service = {
     status: async () => ({ ok: true, value: { on: false } }),
     setMode: async (_id, on) => ({ ok: true, value: { on } }),
+    panel: async () => ({ ok: true, value: { on: false, text: '' } }),
+    revertLast: async () => ({ ok: true, text: '' }),
   }
   const cleanups = []
-  let registration = null
+  const registrations = []
   const ctx = {
     remote: {
       $mount: async (contract) => {
@@ -59,12 +61,20 @@ function makeContext({ mount } = {}) {
       },
       register(options, component) {
         events.push(`register:${options.id}`)
-        registration = { options, component }
-        return registration
+        const entry = { options, component }
+        registrations.push(entry)
+        return entry
       },
     },
   }
-  return { ctx, events, service, cleanups, get registration() { return registration } }
+  return {
+    ctx,
+    events,
+    service,
+    cleanups,
+    get registration() { return registrations[0] ?? null },
+    get registrations() { return registrations },
+  }
 }
 
 test('client mounts the remote, reads remote.beatMode and registers the button', async () => {
@@ -77,6 +87,12 @@ test('client mounts the remote, reads remote.beatMode and registers the button',
   assert.equal(handle.registration.options.id, 'dsh-novel-beat-mode')
   assert.equal(handle.registration.options.name, 'conversation.input.left')
   assert.equal(typeof handle.registration.component, 'function')
+
+  const bar = handle.registrations[1]
+  assert.ok(bar, '拍板台没注册')
+  assert.equal(bar.options.id, 'dsh-novel-beat-segments')
+  assert.equal(bar.options.name, 'conversation.input.dock')
+  assert.equal(typeof bar.component, 'function')
 
   assert.equal(typeof cleanups[0], 'function')
   cleanups[0]()

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Beat",
-    "description": "Does AI sometimes take over your story and decide the plot for you? DSH Novel Beat pauses at key turning points, waits for your call, and continues writing only after you choose. Off by default; it never writes your prose."
+    "description": "Key plot turns should not be decided by the model while it writes your novel. Beat pauses at pivotal forks and offers 2-4 genuinely different directions with their costs; your choice is recorded in a book-wide ledger, and writing continues segment by segment. Off by default; it never writes your prose."
   }
 }

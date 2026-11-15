@@ -12,6 +12,7 @@ import {
   executeVerify,
   executeAdjust,
 } from '../lib/tools.js';
+import { readBookData } from '../lib/store.js';
 
 const BOOK = '测试书';
 
@@ -127,7 +128,7 @@ test('plan → decide → gate → compile → verify 端到端', async (t) => {
   assert.equal(context.context.recent.length, 1);
 });
 
-test('同章重复 plan 被锁；append 续号；已拍板后 reset 被拒', async (t) => {
+test('同章重复 plan 被锁；append 续号；reset 清未拍板、保留已拍板、可同名重建', async (t) => {
   const dir = await tempDir(t);
   const first = await executePlan(planArgs(dir));
 
@@ -148,10 +149,18 @@ test('同章重复 plan 被锁；append 续号；已拍板后 reset 被拒', asy
   await executeDecide({
     dir, book: BOOK, chapter: 1, id: first.ids[0], choice: '拍卖会竞价拍下',
   });
-  await assert.rejects(
-    () => executePlan({ ...planArgs(dir), reset: true }),
-    (error) => error.code === 'chapter-locked',
-  );
+  const canonBefore = (await readBookData(dir, BOOK)).data.canon;
+
+  // reset：清掉还没拍板的那条，保留已拍板的决策与它写进 canon 的结果；
+  // 而且允许用原来的标题重建（实测第 11 章就是被旧标题卡住的）。新决策不复用旧 ID。
+  const rebuilt = await executePlan({ ...planArgs(dir), reset: true });
+  assert.equal(rebuilt.ids[0], 'b1-3', 'reset 之后新决策拿新号，不复用 b1-2');
+
+  const { data } = await readBookData(dir, BOOK);
+  const kept = data.decisions.find((entry) => entry.id === first.ids[0]);
+  assert.equal(kept.status, 'committed', '已拍板的决策被保留');
+  assert.equal(data.decisions.some((entry) => entry.id === 'b1-2'), false, '未拍板的被清掉');
+  assert.deepEqual(data.canon, canonBefore, 'canon 里的结果不跟着 reset 一起删');
 });
 
 test('自定义 choice 必须带 changes；canon 冲突硬拒；状态推进可跨章', async (t) => {

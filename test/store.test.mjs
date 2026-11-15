@@ -46,7 +46,7 @@ test('mutateBookData creates, updates updatedAt, and reads back', async (t) => {
 
   const read = await readBookData(dir, '书');
   assert.equal(read.data.meta.title, '测试书');
-  assert.equal(read.data.schemaVersion, 1);
+  assert.equal(read.data.schemaVersion, 2);
   assert.ok(read.data.updatedAt);
 });
 

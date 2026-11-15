@@ -31,6 +31,12 @@ window.__ModuleLoader__.load({
     const modeResultSchema = scalar((value) => {
       if (!value || typeof value.on !== 'boolean') throw new Error('result must be { on: boolean }')
     })
+    const panelResultSchema = scalar((value) => {
+      if (!value || typeof value.on !== 'boolean' || typeof value.text !== 'string') throw new Error('result must be { on, text }')
+    })
+    const actionResultSchema = scalar((value) => {
+      if (!value || typeof value.ok !== 'boolean' || typeof value.text !== 'string') throw new Error('result must be { ok, text }')
+    })
     const codec = (typeSymbol, schema) => ({ mode: 'strict', typeSymbol, create: () => schema })
     const param = (name, schema) => ({ name, wire: name, source: 'json', codec: codec(name, schema) })
     const TYPERT_REMOTE = {
@@ -45,6 +51,16 @@ window.__ModuleLoader__.load({
           id: 'dsh-novel-beat#beatMode/setMode', namespace: 'beatMode', service: 'beatMode', method: 'setMode',
           invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema), param('on', booleanSchema)],
           result: codec('BeatMode', modeResultSchema),
+        },
+        {
+          id: 'dsh-novel-beat#beatMode/panel', namespace: 'beatMode', service: 'beatMode', method: 'panel',
+          invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema)],
+          result: codec('BeatPanel', panelResultSchema),
+        },
+        {
+          id: 'dsh-novel-beat#beatMode/revertLast', namespace: 'beatMode', service: 'beatMode', method: 'revertLast',
+          invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema)],
+          result: codec('BeatAction', actionResultSchema),
         },
       ],
     }
@@ -152,6 +168,98 @@ window.__ModuleLoader__.load({
       }, state.busy ? '…' : label)
     }
 
+    function BeatSegmentBar({ sessionId, remote }) {
+      const sid = sessionIdOf(sessionId)
+      const [state, setState] = React.useState({ on: false, text: '', busy: false, error: null, notice: null })
+      const seq = React.useRef(0)
+
+      const load = async () => {
+        if (!sid || !remote) return
+        const my = ++seq.current
+        try {
+          const result = await remote.panel(sid)
+          if (my !== seq.current) return
+          const value = result && result.ok === true ? result.value : result
+          if (!value || typeof value.on !== 'boolean') return
+          setState((prev) => ({
+            on: value.on === true,
+            text: String(value.text ?? ''),
+            busy: false,
+            error: null,
+            notice: prev.notice,
+          }))
+        } catch (error) {
+          if (my !== seq.current) return
+          setState((prev) => ({ ...prev, busy: false, error: String(error?.message ?? error) }))
+        }
+      }
+
+      React.useEffect(() => {
+        load()
+      }, [sid])
+
+      const revert = async () => {
+        if (!sid || !remote || state.busy) return
+        setState((prev) => ({ ...prev, busy: true, error: null, notice: null }))
+        try {
+          const result = await remote.revertLast(sid)
+          const value = result && result.ok === true ? result.value : result
+          const text = String(value?.text ?? '')
+          setState((prev) => ({
+            ...prev,
+            busy: false,
+            notice: value && value.ok === true ? text : null,
+            error: value && value.ok === true ? null : text || '回退失败',
+          }))
+          await load()
+        } catch (error) {
+          setState((prev) => ({ ...prev, busy: false, error: String(error?.message ?? error) }))
+        }
+      }
+
+      if (!state.on || !state.text) return null
+
+      const base = {
+        height: 22,
+        padding: '0 8px',
+        borderRadius: 6,
+        border: '1px solid var(--dsw-alias-border-secondary, rgba(127,127,127,.35))',
+        background: 'transparent',
+        color: 'var(--dsw-alias-text-secondary, inherit)',
+        fontSize: 12,
+        lineHeight: '20px',
+        cursor: 'pointer',
+      }
+      return h('div', {
+        style: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '4px 2px 6px',
+          fontSize: 12,
+          color: 'var(--dsw-alias-text-secondary, inherit)',
+        },
+      }, [
+        h('span', { key: 'text', style: { flex: '1 1 auto' } }, state.text),
+        h('button', {
+          key: 'revert',
+          type: 'button',
+          style: { ...base, opacity: state.busy ? 0.65 : 1 },
+          title: '把最后一段正文退掉重写（等同 /beat revert）',
+          onClick: revert,
+        }, state.busy ? '…' : '重写这一段'),
+        h('button', {
+          key: 'refresh',
+          type: 'button',
+          style: base,
+          title: '刷新段落状态',
+          onClick: () => load(),
+        }, '刷新'),
+        state.error ? h('span', { key: 'error', style: { color: 'var(--dsw-alias-text-danger, #dc2626)' } }, String(state.error).slice(0, 40)) : null,
+        state.notice ? h('span', { key: 'notice', style: { color: 'var(--dsw-alias-text-accent, #2563eb)' } }, String(state.notice).slice(0, 40)) : null,
+      ])
+    }
+
     return {
       inject: ['slots', 'remote'],
       async apply(ctx) {
@@ -174,6 +282,13 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('conversation.input.left', () => ctx.slots.register(
           { name: 'conversation.input.left', id: 'dsh-novel-beat-mode', order: 20, label: '拍板' },
           (props) => h(BeatModeButton, {
+            sessionId: props?.sessionId ?? props?.session?.sessionId,
+            remote,
+          }),
+        ))
+        ctx.slots.inject('conversation.input.dock', () => ctx.slots.register(
+          { name: 'conversation.input.dock', id: 'dsh-novel-beat-segments', order: 40, label: '拍板台' },
+          (props) => h(BeatSegmentBar, {
             sessionId: props?.sessionId ?? props?.session?.sessionId,
             remote,
           }),

@@ -1,7 +1,7 @@
 {
   "name": "dsh-novel-beat",
-  "version": "0.6.1",
-  "description": "让 AI 继续写，但关键剧情由你决定。AI 写到会改变故事走向的岔路时暂停，给你 2–4 个走向及其代价；拍板写进全书账本，下一章接着用，写完再做结构核对。默认关闭，不写正文，不依赖其他插件。",
+  "version": "0.7.0",
+  "description": "AI 写小说，关键剧情由你拍板：一次只问一个岔路，写一段、登记一段，拍板写进全书账本；整章闷头写完会被拦，写错可级联回退。默认关闭，不写正文，不依赖其他插件。",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -19,6 +19,10 @@
     "client.js",
     "lib",
     "locale",
+    "docs/adapter-contract.md",
+    "docs/conductor-adapter.md",
+    "docs/tools.md",
+    "docs/architecture.md",
     "cordis.patch.yml",
     "icon.svg",
     "README.md",
@@ -37,6 +41,13 @@
   ],
   "license": "MIT",
   "author": "DrizzleGig",
+  "contributors": [
+    {
+      "name": "MiyueWinter",
+      "email": "mingyue_11129@qq.com",
+      "url": "https://github.com/MiyueWinter"
+    }
+  ],
   "peerDependencies": {
     "@deepseek-ai/dsh-session": "*",
     "@deepseek-ai/dsh-typert-protocol": "*"

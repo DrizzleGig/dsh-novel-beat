@@ -1,28 +1,74 @@
 /**
- * dsh-novel-beat — 作者拍板 + 全书账本（v0.6.0）
+ * dsh-novel-beat — 作者拍板 + 全书账本（v0.7.0）
  *
  * 独立运行：不 import 任何其他插件，不依赖 novel-forge。
- * 数据落在 <dir>/.dsh-novel-beat/<book>/book.json（lib/store.js）。
+ * 数据落在 <工作区根>/.dsh-novel-beat/<book>/book.json（lib/store.js）。
  *
- * 默认关闭（m00430）：装上不主动占 schema；作者用 /beat on 或 M4 的
- * composer 按钮开启后，beat_* 才会进入该会话的工具表。
+ * 默认关闭：装上不注册工具、不注入规则、不动 guard。
+ * 作者 `/beat on` 后三层强制一起生效：
+ *   L1 技能只在本会话出现（skills 按 agent 作用域注册）
+ *   L2 系统提示常驻"先拍板再写"的规则（systemPrompt.section，关闭时返回空串）
+ *   L3 写正文被 guard 拦下（根 ctx 全局注册，函数内按 agent 判模式）
  */
-import { toolDefinitions } from './lib/tools.js'
-import { getSessionMode, setSessionMode } from './lib/store.js'
+import { toolDefinitions, executeRevert, executeFork, listSegments } from './lib/tools.js'
+import {
+  getSessionState,
+  setSessionMode,
+  setSessionBodyRoots,
+  readActiveBook,
+  readBookData,
+  resolveWorkspaceRoot,
+} from './lib/store.js'
+import { evaluateWrite, DEFAULT_BODY_ROOTS, WRITE_TOOL_NAMES } from './lib/enforce.js'
+import { DECISION_STATUS, OPEN_DECISION_STATUSES, TASK_STATE } from './lib/schema.js'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { dirname, join as joinPath } from 'node:path'
 
 export const inject = ['tools', 'commands', 'workingDirectory', 'agents']
 
+/** 插件版本以 package.json 为准（发布时只改一处）。 */
+let VERSION = '0.0.0'
+try {
+  const pkgPath = joinPath(dirname(fileURLToPath(import.meta.url)), 'package.json')
+  VERSION = JSON.parse(readFileSync(pkgPath, 'utf8')).version ?? VERSION
+} catch {
+  // 读不到就当未知版本，不影响功能。
+}
+
+/** L2：模式开着时常驻系统提示。关闭时 text() 返回空串，等于不存在。 */
+const SYSTEM_RULES = [
+  '## 拍板模式（novel-beat）已开启',
+  '',
+  '这一会话由作者开启了"遇到岔路先问、答完接着写"的硬规则，插件在引擎层执行它：',
+  '',
+  '1. 节奏是**写一段 → 遇到岔路 → 问一次 → 按答案接着写 → 登记这一段 → 再问下一个**。',
+  '   不要攒一批决策点一次问完：`beat_next` 一次只问一个，而且上一条还没用 `beat_segment` 登记时，它会拒绝发下一个（`segment-required`）。',
+  '2. 本章还有没问的岔路（`beat_plan` 登记了但没问）时，往正文目录写会被拒（`PENDING_DECISIONS`）。',
+  '   刚拍完板、正在写那一段时的写是允许的；写完用 `beat_segment` 登记，闸才会放下一题。',
+  '3. 写过的东西要改：用 `beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废），不要静默覆盖。',
+  '   只是错字、语序、环境描写：`beat_adjust`（不改故事状态，也不用问作者）。',
+  '4. 一章正文一条决策都没有时，`beat_verify` 会拒绝盖章（`NO_TASK`）：先登记岔路，别整章闷头写完。',
+  '5. 一次只登记一个决策点：写到那个岔路才 `beat_plan`，不要预先规划整章（那会让每章固定成"开局 / 中段 / 章末钩子"三条）。',
+  '6. 作者自己插了一条岔路（`/beat fork`，账本里是 `f-x`、状态 open）时，下一步必须先 `beat_plan(…, forkId: \'f-x\', beats: […])` 把它写成决策点；在那之前 `beat_next` 会拒发新题（`fork-required`）。',
+  '7. 每登记完一段（`beat_segment`），写下一段之前必须先做一次**续写检查**：后面有真岔路就 `beat_plan` 登记这一个；确实没有就 `beat_plan(beats: [], reason: \'为什么不用作者拍板\')`。没做检查就写正文会被拒（`CONTINUATION_CHECK`）。这不是形式——它保证段落边界是顺着剧情长的，而不是事后切的。',
+  '8. 作者选的选项要是会改掉账本里的既有设定，`beat_next` 不会硬失败：它会让你去问作者"是否允许这次剧情改这个设定"，作者同意后再 `beat_next(confirmCanon: true)` 提交。',
+  '',
+  '把这条规则当成作者亲手设的约束：不解释、不绕过、不"先写一版看看"。',
+].join('\n')
+
 const SKILL = {
   name: 'novel-beat',
-  description: '小说创作中实时拦截剧情分叉：每遇到一个会改变故事走向的节点，就登记成决策点、给出 2–4 个真分叉让作者拍板；拍板写进全书账本，写后还能校验。默认关闭，作者说 /beat on 才启用。当用户说「我想写一个…」「写第 N 章」「继续写」「接下来怎么发展」，或任何一次要推进剧情的时候使用。',
-  whenToUse: '任何时候要往下推进剧情——从开书的第一句创意，到续写某一章的中段。只要有“接下来发生什么”要定，就用它拦一下。',
+  description: '小说创作中实时拦截剧情分叉：每遇到一个会改变故事走向的节点，就登记成决策点、给出 2–4 个真分叉让作者拍板；拍板写进全书账本，写后还能校验。仅在作者用 /beat on 开启的本会话中出现。当用户说「我想写一个…」「写第 N 章」「继续写」「接下来怎么发展」，或任何一次要推进剧情的时候使用。',
+  whenToUse: '任何时候要往下推进剧情——从开书的第一句创意，到续写某一章的中段。只要有"接下来发生什么"要定，就用它拦一下。',
   source: 'runtime',
   content: [
-    '# novel-beat：往下写之前先拍板',
+    '# novel-beat：遇到岔路先问，答完接着写',
     '',
     '## 启用',
     '',
-    '默认关闭。作者说「写第 N 章」「继续写」「接下来怎么发展」时，先确认拍板模式已开（`/beat on`）；没开就提示作者开，不要擅自写正文。',
+    '这个技能只出现在作者用 `/beat on` 开启的会话里。开启即代表作者接受硬规则：',
+    '**有岔路没问完，就不许往下写**（引擎层会拒，`PENDING_DECISIONS`）。',
     '',
     '## 唯一判定规则',
     '',
@@ -32,36 +78,38 @@ const SKILL = {
     '- 不问：风、光、温度、气味、比喻、房间陈设、说话时手放在哪。',
     '- 代码层的等价说法：**凡是能往 canon 里写一条的，都是决策点。**',
     '',
-    '## 一次推进的流程',
+    '## 一章的节奏（必须按这个走）',
     '',
     '1. **看账本** — `beat_list(context:true)`：拿全书 canon、未回收义务、最近决策。写下一章前必看。',
-    '2. **登记** — `beat_plan(dir, book, chapter, beats[])`',
-    '   - 每个决策点 2–4 个真分叉；每个选项必须写 `impact` 和 `changes`（entity / key / from / to / evidence）。',
-    '   - 不同选项的 `changes` 必须不同——只换措辞的假分叉会被拒绝。',
-    '   - `change` 写成「谁/什么 从 A 变成 B」；kind 八选一：动作 / 知情 / 关系 / 得失 / 状态 / 承诺 / 时序 / 分叉。',
-    '   - 空白书从最上游开始，拿到答案后用 `append:true` 补下一层；不要先把整章想完再回头拆。',
+    '2. **先写开场** — 直接写这一章开头那一段（还没遇到岔路的部分）。这一步允许，也建议：作者想看到内容，再决定岔路。',
+    '3. **遇到第一个岔路** — `beat_plan(dir, book, chapter, beats)` 只登记**这一个**决策点（一次一个；多给会被拒），给 2–4 个真分叉；每个选项写 `impact` 和 `changes`（entity / key / from / to / evidence），不同选项的 `changes` 必须不同。写到哪个岔路才登记那一个——不要预先规划整章，那会把决策点变成"开局 / 中段 / 章末钩子"三条模板。',
+    '4. **问一次** — `beat_next`：插件亲手把**一个**决策摆给作者并等回答。不要一次问三个，也不要自己替作者选。',
+    '5. **按答案接着写这一段** — 写完用 `beat_segment` 登记（挂到刚拍板的决策上，存快照 + hash）。',
+    '   没登记之前 `beat_next` 会拒发下一个（`segment-required`）——这就是"写一段再问下一个"的闸。',
+    '5b. **续写检查** — 登记完一段，写下一段之前必须先回答"后面还有没有真岔路"：',
+    '   有 → `beat_plan` 登记这一个（就接回第 3 步）；确实没有 → `beat_plan(beats: [], reason: \'…\')` 说明为什么不用作者拍板。',
+    '   没回答之前往正文写会被拒（`CONTINUATION_CHECK`）。宁可老实说"这里是过渡"，也不要造一个假岔路。',
+    '6. **遇到下一个岔路** — 回到第 3 步，重复。',
+    '7. **这一章写完** — `beat_compile`（可选，产出本章约束）→ `beat_verify`（`text` 或 `path`）：证据、禁项、到期义务、段落漂移、有没有没登记的正文。',
     '',
-    '3. **问人** — 把选项摆给作者（`ask_user_question`），不替作者选。每个选项的 impact 要写清后续、代价、伏笔。',
+    '## 改与退',
     '',
-    '4. **记录** — `beat_decide`',
-    '   - 作者选了你给的选项，传它的 `label`；他自己写的内容照原话传，并同时给 `changes`。',
-    '   - 已拍板的要改，传 `supersede:true` + `reason`；不要静默覆盖。',
+    '- 只是错字、语序、环境描写：`beat_adjust`（不改变故事状态，不用问作者）。',
+    '- 写错了、作者说"这一段不行、重写"：`beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废；返回的话就是让模型从哪重写）。作者也可以自己敲 `/beat revert`。',
+    '- 作者改主意但没写错：`beat_adjust` 的 `waive` / `supersede`，必须写 reason。',
     '',
-    '5. **查闸** — `beat_gate`，`pass` 之前**绝对不许写正文**。',
+    '## 作者插的岔路',
     '',
-    '6. **编译** — `beat_compile`（默认 self）：产出「本章决策约束 / 必须发生 / 不得出现 / 既有义务 / 全书 canon」。把它当写作约束。',
-    '',
-    '7. **写正文** — 由宿主模型写。插件不管正文，也不依赖其他插件。',
-    '',
-    '8. **写后校验** — `beat_verify`（`text` 或 `path` 二选一）：正文是否出现每个变化的证据、是否踩禁项、到期义务是否回应。失败按 failures 改稿；通过才算完成。',
-    '',
-    '9. **下一章** 重复 1–8；到期的义务会在 compile / verify 里出现。',
+    '作者比你更清楚哪里该有一个岔路。他用 `/beat fork 要决定什么` 插的岔路会记在账本里（`f-x`、状态 open）——',
+    '这时你不能往下问新的，必须先 `beat_plan(dir, book, chapter, forkId: \'f-x\', beats: [2–4 个选项])` 把它写成决策点，再 `beat_next`。',
+    '不写就 `fork-required`；写完之后那条岔路会变成 `planned` 并挂到你登记的决策上。',
     '',
     '## 纪律',
     '',
-    '- 不先写完再补问；不在 gate 未过时「先写一版看看」。',
+    '- 不先写完再补问；不攒一批决策点一次问完。',
     '- 不用环境描写凑决策点；不为凑数拆节点。',
-    '- 作者改主意用 `beat_adjust`（waive / supersede），必须写 reason；不要静默改账本。',
+    '- 不静默覆盖已经写过的正文；要改就按"改与退"走。',
+    '- 作者选的选项会改掉账本里的既有设定时，不替他说"可以"：先问"是否允许这次剧情改这个设定"，同意后才 `beat_next(confirmCanon: true)`。',
     '- 不依赖 novel-forge；`format:\'novel-forge\'` 只是可选导出。',
   ].join('\n'),
 }
@@ -76,12 +124,73 @@ function sessionKey(context) {
 
 const BEAT_TOOL_NAMES = toolDefinitions().map((definition) => definition.name)
 
+/** 从账本里推断"当前正在写哪一章、还有几个决策没拍板"。 */
+export function gateFromBook(data) {
+  if (!data) return { chapter: null, open: 0, chapters: {} }
+
+  // 按章汇总：guard 认得出目标文件是"第 N 章"时，就用这份数据判第 N 章。
+  // awaitingSegment：已拍板但还没 beat_segment 登记——这时允许写（正在写那一段），不算"还有没问的岔路"。
+  const chapters = {}
+  for (const decision of data.decisions ?? []) {
+    const key = String(decision.chapter)
+    const entry = chapters[key]
+      ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, needsCheck: false })
+    entry.total += 1
+    if (OPEN_DECISION_STATUSES.includes(decision.status)) {
+      entry.open += 1
+    } else if (
+      decision.status === DECISION_STATUS.COMMITTED
+      && !decision.segmentId
+      && decision.legacyReceipt !== true
+    ) {
+      entry.awaitingSegment += 1
+    } else if (decision.status === DECISION_STATUS.ANSWERED && decision.pendingChoice) {
+      // 作者选了一个会改设定的选项，正等作者确认"能不能改"——这时不能往下写。
+      entry.pendingConfirm += 1
+    }
+  }
+  // 刚登记完一段正文 → 下一次写正文前必须先做一次续写检查（详见 lib/enforce.js）。
+  for (const [key, state] of Object.entries(data.chapters ?? {})) {
+    if (state?.continuationCheckRequired !== true) continue
+    const entry = chapters[key] ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, needsCheck: false })
+    entry.needsCheck = true
+  }
+
+  const activeTask = [...(data.tasks ?? [])]
+    .reverse()
+    .find((task) => task.state !== TASK_STATE.COMPLETED)
+  if (activeTask) {
+    return {
+      chapter: activeTask.chapter,
+      open: chapters[String(activeTask.chapter)]?.open ?? 0,
+      chapters,
+    }
+  }
+  const openChapters = Object.keys(chapters)
+    .filter((key) => chapters[key].open > 0)
+    .map(Number)
+  if (openChapters.length > 0) {
+    const chapter = Math.max(...openChapters)
+    return { chapter, open: chapters[String(chapter)].open, chapters }
+  }
+  const lastDecision = (data.decisions ?? []).at(-1)
+  return { chapter: lastDecision?.chapter ?? null, open: 0, chapters }
+}
+
 export async function apply(ctx) {
   const commands = ctx.get('commands')
   const workingDirectory = ctx.get('workingDirectory')
   const agents = ctx.get('agents')
+  const systemPrompt = ctx.get('systemPrompt')
+  const userQuestions = ctx.get('userQuestions')
+  // beat_next 用这个亲手问作者；拿不到服务就退化成"模型自己问 + beat_decide 落账"。
+  const ask = typeof userQuestions?.ask === 'function'
+    ? (request) => userQuestions.ask(request)
+    : null
   const modeCache = new Map()
+  const gateCache = new Map()
   const restrictions = new Map()
+  const skillRegistrations = new Map()
 
   const dirFor = async (agent) => {
     if (!workingDirectory?.ensure) return null
@@ -92,14 +201,45 @@ export async function apply(ctx) {
     }
   }
 
-  const applyAgentMode = async (agent) => {
-    if (!agent?.id) return false
-    const dir = await dirFor(agent)
-    if (!dir) return false
-    const { mode } = await getSessionMode(dir, agent.id)
-    const on = mode === 'on'
-    modeCache.set(agent.id, on)
+  /** guard 必须同步：这里只取"当前会话的工作目录"，拿不到就退化成不拦。 */
+  const syncDirFor = (agent) => {
+    try {
+      return workingDirectory?.get?.(agent?.session) ?? null
+    } catch {
+      return null
+    }
+  }
 
+  const disposeSkill = (id) => {
+    const dispose = skillRegistrations.get(id)
+    if (!dispose) return
+    skillRegistrations.delete(id)
+    try {
+      dispose()
+    } catch {
+      // 作用域可能已先释放。
+    }
+  }
+
+  /** L1：技能只在本会话开启时出现；关闭即撤下。 */
+  const ensureSkill = (agent, on) => {
+    if (!on) {
+      disposeSkill(agent.id)
+      return
+    }
+    if (skillRegistrations.has(agent.id)) return
+    const agentCtx = agent.ctx
+    const skills = agentCtx?.get?.('skills') ?? ctx.get('skills')
+    if (!skills?.register) return
+    const install = () => skills.register(SKILL)
+    const dispose = typeof agentCtx?.effect === 'function'
+      ? agentCtx.effect(install)
+      : (typeof ctx.effect === 'function' ? ctx.effect(install) : install())
+    skillRegistrations.set(agent.id, dispose)
+  }
+
+  /** 关闭时把 beat_* 从本会话工具表里隐掉。 */
+  const applyRestriction = (agent, on) => {
     const previous = restrictions.get(agent.id)
     if (previous) {
       try {
@@ -109,21 +249,151 @@ export async function apply(ctx) {
       }
       restrictions.delete(agent.id)
     }
+    if (on) return
 
-    if (!on) {
-      const agentCtx = agent.ctx
-      if (agentCtx?.tools?.restrict) {
-        const install = () => agentCtx.tools.restrict({ deny: BEAT_TOOL_NAMES })
-        const dispose = typeof agentCtx.effect === 'function'
-          ? agentCtx.effect(install)
-          : install()
-        restrictions.set(agent.id, dispose)
-      }
+    const agentCtx = agent.ctx
+    if (agentCtx?.tools?.restrict) {
+      const install = () => agentCtx.tools.restrict({ deny: BEAT_TOOL_NAMES })
+      const dispose = typeof agentCtx.effect === 'function'
+        ? agentCtx.effect(install)
+        : install()
+      restrictions.set(agent.id, dispose)
     }
-    return on
   }
 
-  for (const definition of toolDefinitions()) {
+  /**
+   * 刷新一个会话的三层状态。guard 不能 await，所以它读的是这份缓存；
+   * 每次 beat_* 工具跑完、每次 /beat、每个 agent 建立时都会刷新。
+   */
+  const refreshAgent = async (agent) => {
+    if (!agent?.id) return null
+    const dir = await dirFor(agent)
+    if (!dir) {
+      modeCache.set(agent.id, false)
+      gateCache.set(agent.id, { on: false, chapter: null, open: 0, chapters: {}, bodyRoots: DEFAULT_BODY_ROOTS, dir: null })
+      disposeSkill(agent.id)
+      applyRestriction(agent, false)
+      return null
+    }
+
+    const settings = await getSessionState(dir, agent.id)
+    const on = settings.mode === 'on'
+    const bodyRoots = settings.bodyRoots ?? DEFAULT_BODY_ROOTS
+
+    let gate = { chapter: null, open: 0, chapters: {} }
+    if (on) {
+      try {
+        const active = await readActiveBook(dir)
+        gate = gateFromBook(active?.data ?? null)
+      } catch {
+        // 账本读不了不让 guard 误拦，保持上一次的判定。
+        gate = gateCache.get(agent.id) ?? gate
+      }
+    }
+
+    modeCache.set(agent.id, on)
+    gateCache.set(agent.id, { on, bodyRoots, dir, ...gate })
+    ensureSkill(agent, on)
+    applyRestriction(agent, on)
+    return { on, dir, bodyRoots, ...gate }
+  }
+
+  // ── 扩展窗口：进程内只读服务 novelBeat ─────────────────────────────────
+  // 给兄弟插件用（fade 的账本注入、conductor 的任务适配、后续 voice/fanfic…）。
+  // 只读：查询与订阅，**不提供任何写入或改状态的入口**——剧情决策权仍在作者与 beat 工具手里。
+  const commitListeners = new Set()
+  const emitCommit = (payload) => {
+    for (const listener of [...commitListeners]) {
+      try {
+        listener(payload)
+      } catch {
+        // 订阅者自己的异常不能影响插件主流程。
+      }
+    }
+  }
+
+  const resolveBookFor = async (cwd) => {
+    if (typeof cwd !== 'string' || cwd === '') return null
+    try {
+      const active = await readActiveBook(cwd)
+      if (!active) return null
+      return { book: active.book, root: resolveWorkspaceRoot(cwd) }
+    } catch {
+      return null
+    }
+  }
+
+  const novelBeatApi = {
+    version: VERSION,
+    /** 这个会话是不是开着拍板（agentId 传 SessionId 字符串）。 */
+    isOn(agentId) {
+      return modeCache.get(String(agentId)) === true
+    },
+    /** 找"这个工作区现在正在写的那本书"（按 book.json 的最近改动）。 */
+    async resolveBook(cwd) {
+      const found = await resolveBookFor(cwd)
+      return found ? { book: found.book, dir: found.root } : null
+    },
+    /** 只读快照：账本里这一章/这本书的决策、canon、义务、段落。 */
+    async query({ cwd, book, chapter } = {}) {
+      const found = await resolveBookFor(cwd)
+      if (!found) return null
+      const target = typeof book === 'string' && book ? book : found.book
+      const { data } = await readBookData(found.root, target)
+      const scope = (list) => (chapter == null ? (list ?? []) : (list ?? []).filter((item) => item.chapter === chapter))
+      return {
+        book: target,
+        version: data.schemaVersion,
+        chapter: chapter ?? null,
+        decisions: scope(data.decisions).map((decision) => ({
+          id: decision.id,
+          chapter: decision.chapter,
+          title: decision.title,
+          status: decision.status,
+          choice: decision.chosen?.label ?? decision.answerText ?? null,
+          segmentId: decision.segmentId ?? null,
+        })),
+        canon: (data.canon ?? []).map((entry) => ({
+          entity: entry.entity,
+          key: entry.key,
+          value: entry.value,
+          chapter: entry.chapter ?? null,
+        })),
+        obligations: (data.obligations ?? [])
+          .filter((entry) => chapter == null || entry.dueChapter === chapter || entry.sourceChapter === chapter)
+          .map((entry) => ({
+            id: entry.id,
+            text: entry.text,
+            status: entry.status,
+            dueChapter: entry.dueChapter ?? null,
+            sourceDecision: entry.sourceDecision ?? null,
+          })),
+        segments: scope(data.segments)
+          .filter((segment) => segment.status !== 'reverted')
+          .map((segment) => ({
+            id: segment.id,
+            chapter: segment.chapter,
+            file: segment.file,
+            offsetStart: segment.offsetStart,
+            offsetEnd: segment.offsetEnd,
+            chars: segment.chars,
+            decisionIds: segment.decisionIds ?? [],
+          })),
+        chapters: data.chapters ?? {},
+      }
+    },
+    /** 订阅"作者的拍板/段落落账"，返回取消订阅函数。 */
+    onDidCommit(listener) {
+      if (typeof listener !== 'function') return () => {}
+      commitListeners.add(listener)
+      return () => commitListeners.delete(listener)
+    },
+  }
+  if (typeof ctx.provide === 'function') {
+    ctx.effect(() => ctx.provide('novelBeat', novelBeatApi))
+  }
+
+  for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask) })) {
     ctx.effect(() => ctx.tools.register(definition, {
       when: (context) => modeCache.get(sessionKey(context)) === true,
     }))
@@ -132,57 +402,222 @@ export async function apply(ctx) {
   if (commands?.register) {
     ctx.effect(() => commands.register({
       name: 'beat',
-      description: '开关拍板模式：/beat on、/beat off、/beat status',
+      description: '拍板模式：/beat on、/beat off、/beat status、/beat body [路径|reset]、/beat list [章]、/beat revert [段号]、/beat fork <要决定什么>',
       handler: async (invocation) => {
         const raw = String(invocation?.rawInput ?? '')
           .trim()
           .replace(/^\/?beat\b/i, '')
           .trim()
-        const action = (raw.split(/\s+/)[0] || 'status').toLowerCase()
+        const parts = raw.split(/\s+/).filter(Boolean)
+        const action = (parts[0] || 'status').toLowerCase()
         const agent = invocation?.agent
         if (!agent?.id) return { kind: 'error', text: '拿不到当前会话，无法切换拍板模式。' }
         const dir = await dirFor(agent)
         if (!dir) return { kind: 'error', text: '拿不到当前工作区，无法切换拍板模式。' }
 
         if (action === 'status') {
-          const on = await applyAgentMode(agent)
+          const state = await refreshAgent(agent)
+          const cached = gateCache.get(agent.id)
+          const roots = (cached?.bodyRoots ?? DEFAULT_BODY_ROOTS).join('、') || '（空：只保护已登记段落）'
+          const chapter = cached?.chapter ? `第 ${cached.chapter} 章` : '还没登记本章决策'
           return {
             kind: 'success',
-            text: `拍板模式：${on ? '开' : '关'}（/beat on 开启，/beat off 关闭）`,
+            text: [
+              `拍板模式：${state?.on ? '开' : '关'}`,
+              `- 受保护正文目录：${roots}`,
+              `- 当前进度：${chapter}${cached?.open ? `，还有 ${cached.open} 个决策没拍板` : ''}`,
+              '- 开关：/beat on | /beat off；改保护目录：/beat body 正文|/beat body reset',
+              '- 段落：/beat list（列本章段落）；/beat revert [段号]（退这一段及其后所有段，重写）',
+              '- 自己插岔路：/beat fork 要不要当场杀掉独孤博',
+            ].join('\n'),
           }
         }
-        if (action !== 'on' && action !== 'off') {
-          return { kind: 'error', text: '用法：/beat on | /beat off | /beat status' }
+
+        if (action === 'fork') {
+          // 作者主动插一条岔路：模型漏判时由作者开口，插件把它记进账本，
+          // 模型看到 fork-required 之后必须用 beat_plan(forkId) 写成决策点再问。
+          const text = raw.replace(/^fork\b/i, '').replace(/^[\s:：]+/, '').trim()
+          if (!text) {
+            return { kind: 'error', text: '用法：/beat fork 这里要决定什么（例如 /beat fork 要不要当场杀掉独孤博）' }
+          }
+          const active = await readActiveBook(dir)
+          if (!active) return { kind: 'error', text: '这本书还没有账本：先 beat_plan 登记第一次岔路。' }
+          const chapter = gateCache.get(agent.id)?.chapter
+            ?? Math.max(1, ...active.data.decisions.map((decision) => decision.chapter))
+          const forked = await executeFork({ dir, book: active.book, chapter, text })
+          await refreshAgent(agent)
+          return {
+            kind: 'success',
+            text: `${forked.message}\n（也可以直接说给模型听：这里要插一个岔路——它会用 beat_fork 登记。）`,
+          }
+        }
+
+        if (action === 'body') {
+          const target = parts.slice(1).join(' ').trim()
+          if (!target) return { kind: 'error', text: '用法：/beat body 路径（可多次追加）| /beat body reset' }
+          const current = gateCache.get(agent.id)?.bodyRoots ?? DEFAULT_BODY_ROOTS
+          const next = target.toLowerCase() === 'reset'
+            ? [...DEFAULT_BODY_ROOTS]
+            : [...new Set([...current, target.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '')])]
+          await setSessionBodyRoots(dir, agent.id, next)
+          const state = await refreshAgent(agent)
+          return {
+            kind: 'success',
+            text: `受保护正文目录：${(state?.bodyRoots ?? next).join('、')}`,
+          }
+        }
+
+        if (action === 'list' || action === 'revert') {
+          const active = await readActiveBook(dir)
+          if (!active) return { kind: 'error', text: '这本书还没有账本。' }
+          const book = active.book
+          // `/beat revert 3!` 里的感叹号就是"我知道正文被改过，照找到的位置退"的确认。
+          const confirm = /!$/.test(parts[1] ?? '') || parts.some((part) => part === '!')
+          const cleaned = (parts[1] ?? '').replace(/!+$/, '')
+          const numeric = /^\d+$/.test(cleaned) ? Number(cleaned) : null
+          const chapter = numeric ?? gateCache.get(agent.id)?.chapter
+            ?? Math.max(1, ...active.data.decisions.map((decision) => decision.chapter))
+
+          if (action === 'list') {
+            const listed = await listSegments({ dir, book, chapter })
+            if (!listed.segments.length) {
+              return { kind: 'success', text: `第 ${chapter} 章还没有登记过段落。写完一段就用 beat_segment 登记，回退才有东西可退。` }
+            }
+            const lines = listed.segments.map((segment, index) => {
+              const titles = segment.decisions.length
+                ? segment.decisions.map((item) => `${item.id}「${item.title}」`).join('、')
+                : '（开场/过渡段）'
+              const mark = segment.status === 'reverted' ? ' · 已作废' : ''
+              return `${index + 1}. ${segment.id} · ${segment.chars} 字 · 第 ${segment.offsetStart}–${segment.offsetEnd} 字 · ${titles}${mark}`
+            })
+            return {
+              kind: 'success',
+              text: [
+                `第 ${chapter} 章（${book}），共 ${listed.segments.length} 段：`,
+                ...lines,
+                '',
+                '退最后一段：/beat revert；退第 N 段：/beat revert N（它后面的段会一起作废）',
+              ].join('\n'),
+            }
+          }
+
+          let segmentId = /^s-\d+$/i.test(cleaned) ? cleaned : null
+          if (!segmentId && numeric) {
+            const committed = active.data.segments
+              .filter((segment) => segment.chapter === chapter && segment.status === 'committed')
+              .sort((left, right) => (left.offsetStart ?? 0) - (right.offsetStart ?? 0))
+            segmentId = committed[numeric - 1]?.id ?? null
+            if (!segmentId) return { kind: 'error', text: `第 ${chapter} 章没有第 ${numeric} 段。` }
+          }
+          const reverted = await executeRevert({ dir, book, chapter, confirm, ...(segmentId ? { segment: segmentId } : {}) })
+          await refreshAgent(agent)
+          const notes = reverted.warnings?.length ? `\n提醒：${reverted.warnings.join('；')}` : ''
+          return { kind: 'success', text: `${reverted.message}${notes}` }
+        }
+
+        if (action !== 'on' && action !== 'off' && action !== 'revert' && action !== 'list' && action !== 'fork') {
+          return {
+            kind: 'error',
+            text: '用法：/beat on | /beat off | /beat status | /beat body [路径|reset] | /beat list [章] | /beat revert [段号] | /beat fork <要决定什么>',
+          }
         }
 
         await setSessionMode(dir, agent.id, action)
-        const on = await applyAgentMode(agent)
+        const state = await refreshAgent(agent)
+        const on = state?.on === true
         return {
           kind: 'success',
-          text: `拍板模式已${on ? '开启' : '关闭'}。${on ? '写章前先 beat_plan。' : 'beat_* 工具已从本会话隐藏。'}`,
+          text: on
+            ? '拍板模式已开启：先 beat_plan 登记本章决策，全部拍板后才能写正文。'
+            : '拍板模式已关闭：beat_* 工具已隐藏，技能已撤下，写正文不再被拦。',
         }
       },
     }))
   }
 
-  const skills = ctx.get('skills')
-  if (skills) {
-    ctx.effect(() => skills.register(SKILL))
+  // L2：常驻规则。注册在插件根 ctx（全局一层），但按 scope 判断是哪个会话
+  if (systemPrompt?.section) {
+    ctx.effect(() => systemPrompt.section({
+      name: 'novel-beat',
+      order: 60,
+      text: (context) => {
+        const id = context?.scope?.id ?? context?.scope
+        if (!id) return ''
+        return modeCache.get(String(id)) === true ? SYSTEM_RULES : ''
+      },
+    }))
+  }
+
+  // L3：底层写盘闸。M0 已验证 agent 作用域是根作用域、彼此不继承，
+  // 所以注册在插件根 ctx 上一次，函数里按 execution.agent.id 判模式。
+  if (typeof ctx.tools?.guard === 'function') {
+    ctx.effect(() => ctx.tools.guard((execution) => {
+      try {
+        const agent = execution?.agent
+        const id = agent?.id
+        if (!id) return undefined
+        const cached = gateCache.get(id)
+        if (!cached?.on) return undefined
+
+        const cwd = syncDirFor(agent) ?? cached.dir
+        if (!cwd) return undefined
+
+        const verdict = evaluateWrite({
+          toolName: execution.name,
+          args: execution.arguments,
+          cwd,
+          bodyRoots: cached.bodyRoots ?? DEFAULT_BODY_ROOTS,
+          state: cached,
+        })
+        return verdict.blocked ? verdict.reason : undefined
+      } catch {
+        // guard 抛错会炸整次工具调用，这里一律退化成放行（并让 verify 事后兜底）。
+        return undefined
+      }
+    }))
   }
 
   if (typeof ctx.on === 'function') {
     ctx.effect(() => ctx.on('agent/created', async ({ agent }) => {
-      await applyAgentMode(agent)
+      await refreshAgent(agent)
     }))
     ctx.effect(() => ctx.on('agent/disposed', ({ agent }) => {
-      modeCache.delete(agent?.id)
-      restrictions.delete(agent?.id)
+      const id = agent?.id
+      modeCache.delete(id)
+      gateCache.delete(id)
+      restrictions.delete(id)
+      disposeSkill(id)
     }))
-  }
+    // 每次 beat_* 跑完都刷新闸门状态：下一次写正文用的就是最新账本
+    ctx.effect(() => ctx.on('tools/result', (exec) => {
+      const name = exec?.name
+      const agent = exec?.agent
+      if (typeof name !== 'string' || !agent?.id || !name.startsWith('beat_')) return
+      // 落账事件：订阅者（fade 的快照、conductor 的任务状态）据此知道"账本变了"。
+      const kind = { beat_next: 'commit', beat_decide: 'commit', beat_segment: 'segment', beat_revert: 'revert' }[name]
+      if (kind) {
+        const args = exec.arguments ?? exec.args ?? {}
+        const value = exec.result?.value ?? exec.result ?? {}
+        const ids = kind === 'commit'
+          ? (value?.committed ?? []).map((item) => item?.id ?? item).filter(Boolean)
+          : kind === 'segment'
+            ? [value?.segment?.id ?? value?.segmentId].filter(Boolean)
+            : (value?.reverted?.revertedSegments ?? []).filter(Boolean)
+        emitCommit({
+          kind,
+          tool: name,
+          book: args.book ?? null,
+          chapter: args.chapter ?? null,
+          ids,
+          at: new Date().toISOString(),
+        })
+      }
+      return refreshAgent(agent)
+    }))  }
 
   if (agents?.list) {
     for (const agent of agents.list()) {
-      await applyAgentMode(agent)
+      await refreshAgent(agent)
     }
   }
 
@@ -195,5 +630,8 @@ export async function apply(ctx) {
       }
     }
     restrictions.clear()
+    for (const id of [...skillRegistrations.keys()]) disposeSkill(id)
+    modeCache.clear()
+    gateCache.clear()
   })
 }

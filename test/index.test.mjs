@@ -41,22 +41,46 @@ function fakeContext(dir) {
   return { ctx, tools, commands, skills };
 }
 
-test('apply 注册 7 个工具、/beat 命令和技能', async (t) => {
+test('apply 注册 11 个工具与 /beat 命令；技能只在该会话开启后出现', async (t) => {
   const dir = await tempDir(t);
   const { ctx, tools, commands, skills } = fakeContext(dir);
+  const agentSkills = [];
+  const agent = {
+    id: 'session-s',
+    ctx: {
+      get(name) {
+        if (name === 'skills') {
+          return { register(skill) { agentSkills.push(skill); return () => {}; } };
+        }
+        return null;
+      },
+      effect(fn) { return fn(); },
+    },
+  };
 
   await apply(ctx);
 
   assert.deepEqual(
     tools.map((tool) => tool.definition.name),
-    ['beat_plan', 'beat_list', 'beat_decide', 'beat_gate', 'beat_compile', 'beat_verify', 'beat_adjust'],
+    ['beat_plan', 'beat_next', 'beat_segment', 'beat_revert', 'beat_fork', 'beat_list', 'beat_decide',
+      'beat_gate', 'beat_compile', 'beat_verify', 'beat_adjust'],
   );
   assert.equal(commands.length, 1);
   assert.equal(commands[0].name, 'beat');
-  assert.equal(skills.length, 1);
-  assert.equal(skills[0].name, 'novel-beat');
-  assert.match(skills[0].content, /beat_verify/);
-  assert.doesNotMatch(skills[0].content, /novel_outline save_chapter/);
+  assert.equal(skills.length, 0, '默认关闭时不注册技能');
+  assert.equal(agentSkills.length, 0);
+
+  const on = await commands[0].handler({ agent, rawInput: 'on' });
+  assert.equal(on.kind, 'success');
+  assert.equal(agentSkills.length, 1);
+  assert.equal(agentSkills[0].name, 'novel-beat');
+  assert.match(agentSkills[0].content, /beat_verify/);
+  assert.doesNotMatch(agentSkills[0].content, /novel_outline save_chapter/);
+
+  await commands[0].handler({ agent, rawInput: 'off' });
+  assert.equal(agentSkills.length, 1, '关闭时不重复注册');
+  await commands[0].handler({ agent, rawInput: 'on' });
+  assert.equal(agentSkills.length, 2, '再开会重新注册');
 });
 
 test('默认关闭；/beat on 后 when 为 true；/beat off 后恢复 false', async (t) => {
@@ -120,8 +144,8 @@ test('默认关闭时给 agent 作用域加 restrict；/beat on 解除、off 再
   await apply(ctx);
   assert.equal(restrictions.length, 1);
   assert.deepEqual(restrictions[0].deny, [
-    'beat_plan', 'beat_list', 'beat_decide', 'beat_gate',
-    'beat_compile', 'beat_verify', 'beat_adjust',
+    'beat_plan', 'beat_next', 'beat_segment', 'beat_revert', 'beat_fork', 'beat_list', 'beat_decide',
+    'beat_gate', 'beat_compile', 'beat_verify', 'beat_adjust',
   ]);
 
   await commands[0].handler({ agent, rawInput: 'on' });
@@ -143,6 +167,6 @@ test('没有 commands / workingDirectory 时工具仍注册，不崩', async (t)
     tools: { register(definition, options) { tools.push({ definition, options }); } },
   };
   await apply(ctx);
-  assert.equal(tools.length, 7);
+  assert.equal(tools.length, 11);
   assert.equal(await tools[0].options.when({ agent: { id: 'x' } }), false);
 });

@@ -1,5 +1,99 @@
 # Changelog
 
+## 0.7.0 — 2026-11-15
+
+**主题：从"靠模型自觉的工具集"变成"引擎兜底的决策事务"。开着就一定走流程。**
+
+**共同作者：[MiyueWinter](https://github.com/MiyueWinter)** — 文案、测试、设计与开发。
+
+### 已完成（M1–M4）
+
+- **账本升到 schemaVersion 2**：新增 `segments` / `revisions` / `requests` / `tasks`；决策多了 `status`（`proposed`/`asked`/`answered`/`committed`/`superseded`/`cancelled`）与凭据字段。读 0.6 账本时自动迁移，原文件备份为 `book.json.bak`。
+- **作者作答凭据（receipt）**：`committed` 的决策必须指向一条 `requests[]` 记录。引擎亲手问到的答案记 `origin:'author'`；由模型转述的老路径记 `origin:'model-relayed'` 并留 `relayedBy`——不冒充作者。
+- **`beat_next`（新）**：插件自己去问作者，**一次只问一个决策**；问完帮你落账。上一条还没用 `beat_segment` 登记成段落时，它会拒发下一个（`segment-required`）——这就是"写一段、问一个、再写下一段"的节奏闸。作者写了自己的答案但没给结构化变化时，转成"待补"（`answered`），不编造 canon 变更。
+- **三层强制**：`/beat on` 后 ①技能只在这个会话出现 ②系统提示常驻节奏规则 ③写 `正文/` 的工具调用被 guard 拦。**判定只看"这一章还有没有岔路没问"**：有 → `PENDING_DECISIONS`（先 `beat_next` 问一个）；没有 → 放行（允许先写开场、也允许写完这一段再问下一个）。`/beat off` 三层全撤。
+- **按章判**：写 `第N章…md` 时按文件名的章号核对那一章的决策，修掉"新开一章不登记决策也能写"的漏洞。
+- **`beat_gate` 闸门下放到本段**：传 `ids` 只对本段判，不传按整章判。
+- **工作区根锚定**：同一本书在 `正文/` 子目录里调用也只认一份账本。
+- **`beat_plan` 一次只收一个决策点**（多给报 `one-at-a-time`）：按章批量规划会把"岔路"变成按模板填空——真实账本里每章恰好 3 条、第三条总是"章末钩子"就是这么来的。写到那个岔路才登记。
+- **`beat_segment` 回显正文**：登记成功时把这一段正文（≤600 字预览 + 总字数）一起返回，卡片直接显示，作者不用去翻文件。开场/过渡段可以不带决策点，但要显式给范围。
+- **`beat_revert` 改成级联回退**：退第 N 段 = 正文截断到它的起点，**第 N 段及其后所有已登记段一起作废**，canon/义务按倒序还原，一条 `revision(kind=revert)` 记下 `revertedSegments`；返回的话就是"从第 X 字重写"。不再需要 `force`，也不会留下"正文没了、段落还挂在账本上"的僵尸段。
+- **新增命令 `/beat list [章]` 与 `/beat revert [段号]`**：作者自己就能列段落、退一段重写（不传段号=最后一段）。
+- **作者自定义答案的死锁已修**：作者在卡片里自己写答案后，决策停在 `answered`；现在允许 `beat_decide` 为这一条补结构化 changes 落账，否则它永远到不了 `committed`、第 2 段起全部登记不上。
+- **证据匹配归一化**：`beat_verify` 匹配 evidence 前做 NFKC、去空白/零宽/markdown 标记/标点、小写——全角半角、引号、省略号差异不再误判。
+- **`beat_segment`（新）**：把刚写完的这一段登记成段落——存快照到 `revisions/<id>.md`、算区间与 hash、挂到决策点上；不给位置就接在上一段之后。同一决策只能被一个未回退的段落占用。
+- **`beat_verify` 两道新提醒/闸**：已登记段落被改过 → `drift:<段落>`；正文里有没登记成段落的字 → `unsegmented:<区间>`（后者意味着这段退不了）。一章一条决策都没有时拒绝盖 `verified` 章（`NO_TASK`）。
+- **`beat_decide` 降级为兜底**：宿主有提问服务时它直接拒绝（`use-beat-next`），防止模型绕过"插件亲手问作者"；唯一例外是作者刚在卡片里自己写了答案（`answered`），那时必须由它补齐结构化 changes。
+
+### 回退安全（P0，按 ChatGPT 评审修）
+
+- **`beat_revert` 不再"漂移也硬截"**：正文被手工改过、旧 offset 失效时，先按登记时的快照原文在正文里重新定位——
+  - hash 完全对得上：直接退；
+  - 能唯一定位到新位置：要求 `confirm:true`（命令里写 `/beat revert 3!`）才动正文；
+  - 定位不到 or 同一段原文出现多次：**直接拒绝**（`cannot-locate`），一个字都不动，让人工处理。
+  这样"作者改过的内容被截掉"这种事不会发生。
+
+### 作者插岔路（P1）
+
+- **新工具 `beat_fork` + 命令 `/beat fork <要决定什么>`**：作者比模型清楚哪里该有岔路，可以直接插一条（账本 `forks[]`，状态 `open`）。
+- 插了之后模型必须先 `beat_plan(…, forkId: 'f-x', beats: […])` 把它写成决策点，否则 `beat_next` 拒发新题（`fork-required`）、`beat_plan` 不带 `forkId` 也拒（`fork-required`）。登记后岔路变 `planned` 并挂上 `decisionId`。
+- `beat_list`（带 chapter）会列出本章待处理的岔路；老账本没有 `forks` 字段照读。
+
+### 第 11 章实测三问（P0/P1，按作者 ChatGPT 评审修）
+
+- **冲突选项不再硬失败**：作者选的选项和 canon 对不上时，不再 `canon-conflict` 把选择丢掉——先把选择存成
+  `pendingChoice`（`status=answered`），返回"先问作者能不能改这个设定"；作者同意后 `beat_next(confirmCanon: true)`
+  覆盖 canon，并记 `canon-overridden` 警告与 `audit.canonOverride`。没确认前 canon 不动、也不写凭据。
+- **续写检查**：`beat_segment` 登记完一段就置 `chapters[N].continuationCheckRequired`；下一次写正文前
+  必须用 `beat_plan` 回答一次"后面还有没有真岔路"——有就登记这一个（`verdict: fork`），
+  没有就 `beat_plan(beats: [], reason: '…')`（`verdict: no-fork`，不造假决策）。没回答前 guard 拒写
+  `[CONTINUATION_CHECK]`。不设段落字数配额。
+- **`reset` 语义修正**：先清掉本章未拍板的决策（fork 放回 `open`）、保留已拍板的决策与它们的 canon 结果，
+  再查重名——于是 `reset:true` 可以用原标题重建；新决策分配**新 ID**（`counters.decisions.<章号>` 高水位），
+  不复用被 reset 掉的编号。
+- **待确认时不许往下写**：作者选了会改设定的选项但还没回答"是否允许改设定"时，guard 拒写
+  `[PENDING_DECISIONS]`（`chapters[N].pendingConfirm`），避免模型趁确认前把下一段写了。
+
+### 作者侧入口（P2）
+
+- **拍板台**：输入框上方一条状态条（只在 `拍板：开` 时出现）——显示"第 N 章 · K 段 · 最后一段 X 字"，
+  带「重写这一段」（= `/beat revert`，级联作废）与「刷新」两个按钮，不用记段号。
+- remote 服务 `beatMode` 新增 `panel(sessionId)` 与 `revertLast(sessionId)`；按钮与命令走同一份实现
+  （`revertLast` 内部执行 `/beat revert`）。
+
+### 写作单元闸（第 7 条回归：整章一次写完再回头问）
+
+- **闸 A（`write-ahead`）**：拍板之前、登记新决策之前，正文里不许有"还没登记成段落"的字。
+  模型要么先把上一段 `beat_segment` 登记，要么把多写的删掉——"先写完整章、再回头问作者"从此走不通。
+  入口统一放在 `beat_next`（提问/提交）与 `beat_plan`（登记新决策）两处，不只靠 guard 拦写入。
+- **闸 B（`unit-gap` / `prefix-rewritten` / `gate-mismatch`）**：拍板成功时记一道**闸门**
+  `chapters[N].gate = { file, offset, prefixHash, decisionIds, at, consumed }`；
+  下一次 `beat_segment` 必须正好从闸门锚点开始、锚点之前的正文 hash 没变、并且只挂这道闸门授权的决策。
+  登记成功即消费（`consumed: true`），同一道闸门不能被重复使用。闸门只能由"拍板"创建，普通写入改不动它。
+- **`beat_verify` 粒度诊断（只提醒，不阻断）**：`coarse-unit:<段落>`（一段占本章 >60% 且整章 >1500 字）、
+  `thin-forks`（整章 >1500 字却只问了 ≤1 个岔路）——把"节奏塌了"变成数字，而不是新加一条硬规则。
+- **边界写清楚**：这三条是**工具面内的协议**，不是系统级沙箱——模型绕开工具（shell 重定向、外部编辑器）写正文，
+  guard 与闸门都看不见；那种情况只能靠 `beat_verify` 的 `unsegmented` / `drift` 事后发现。
+
+### 扩展窗口（M5）
+
+- **进程内只读服务 `novelBeat`**：`ctx.provide('novelBeat', …)`，面上只有
+  `version` / `isOn(agentId)` / `resolveBook(cwd)` / `query({cwd, book, chapter})` / `onDidCommit(cb)`，
+  **没有任何写入入口**——兄弟插件只能读账本、不能替代作者拍板。`onDidCommit` 在 `beat_next` / `beat_decide` /
+  `beat_segment` / `beat_revert` 之后发出 `{ kind, tool, book, chapter, ids, at }`。
+- **`docs/adapter-contract.md`**：`book.json`（schemaVersion 2）的文件契约——字段、状态枚举、
+  凭据 `origin` 的三种来源、段落偏移与有效段落判定、读的时候的 5 条注意事项。
+- **`docs/conductor-adapter.md`**：Conductor 适配协议在 0.7.0 **冻结**——权责边界四条、
+  `task_context{task_id, project_id, branch_id, correlation_id}`、修改类调用必须带
+  `idempotency_key` + `expected_revision`、统一八态返回（`accepted|running|needs_author|blocked|ready|completed|failed|cancelled`）。
+- `package.json` 版本号 0.6.1 → **0.7.0**，`files` 增加 `docs`；插件版本由 `index.js` 从 `package.json` 读取，发布只改一处。
+
+### 验收
+
+- `node --test`（workdir `D:\插件\plugins\novel-beat`）：**126 tests / 126 pass / 0 fail**。
+- 模拟链路 `D:\插件\tmp\beat-v07-spike\sim-rhythm.mjs`：**15/15 通过**（含第 7 条回归两条：整章写完再登记 / 再问作者都会被 `write-ahead` 拦）。
+- 安装形态：`link:D:/插件/plugins/novel-beat`，重载走 `set_bundle(false)` → `remove_bundle` → `install_bundle`。
+
 ## 0.6.1 — 2026-11-13
 
 **主题：文案改成写给小说作者的说法，功能不变。**

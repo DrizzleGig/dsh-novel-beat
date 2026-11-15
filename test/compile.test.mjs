@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { DECISION_STATUS } from '../lib/schema.js';
 import assert from 'node:assert/strict';
 import { buildCompile } from '../lib/compile.js';
 
@@ -8,7 +9,7 @@ const decided = {
   title: '玉佩怎么到手',
   kind: '得失',
   change: '玉佩 从 拍卖品 变成 林砚持有',
-  status: 'decided',
+  status: DECISION_STATUS.COMMITTED,
   legacy: false,
   chosen: {
     label: '拍卖会竞价拍下',
@@ -46,7 +47,7 @@ test('self compile 产出约束、证据、禁项和 canon', () => {
 });
 
 test('有未拍板时只返回 missing，不产出 markdown', () => {
-  const pending = { ...decided, status: 'pending', chosen: null };
+  const pending = { ...decided, status: DECISION_STATUS.PROPOSED, chosen: null };
   const result = buildCompile(base([pending]), 1);
 
   assert.equal(result.markdown, '');
