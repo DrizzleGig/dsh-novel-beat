@@ -217,7 +217,7 @@ AI 写到这里停了下来。药草周围看着没人，泥土下却残留着�
 
 ## 喜欢它？
 
-如果「拍板」帮你在 AI 写作中掌握了关键剧情的决定权，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-beat) 点亮 ⭐，也欢迎 [Issue](https://github.com/DrizzleGig/dsh-novel-beat/issues) 或 PR。
+如果「拍板」帮你在 AI 写作中掌握了关键剧情的决定权，欢迎在 [GitHub](https://github.com/DrizzleGig/dsh-novel-beat) 点亮 ⭐，也欢迎 [Issue](https://github.com/DrizzleGig/dsh-novel-beat/issues) 或 [PR](https://github.com/DrizzleGig/dsh-novel-beat/pulls)。
 
 ## 许可证
 
