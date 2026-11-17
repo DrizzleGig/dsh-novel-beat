@@ -1,7 +1,7 @@
 {
   "name": "dsh-novel-beat",
-  "version": "0.7.0",
-  "description": "AI 写小说，关键剧情由你拍板：一次只问一个岔路，写一段、登记一段，拍板写进全书账本；整章闷头写完会被拦，写错可级联回退。默认关闭，不写正文，不依赖其他插件。",
+  "version": "0.8.0",
+  "description": "AI 写小说，关键剧情由你拍板。右栏「拍板台」按章看全书决策：改选前先看会删多少字、作废几段、撤回哪些设定、重开哪些决策，确认后安全回退，旧正文留档可查。默认关闭，不写正文。",
   "type": "module",
   "main": "index.js",
   "exports": {
@@ -12,7 +12,9 @@
     "./locale/*.json": "./locale/*.json"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "check": "node --check index.js && node --check client.js && node --check lib/remote.js && node --check lib/remote-contract.js && node --check lib/panel.js && node --check lib/rewind.js && node --check lib/resume.js",
+    "check:panel": "node scripts/check-panel.mjs"
   },
   "files": [
     "index.js",
@@ -23,6 +25,7 @@
     "docs/conductor-adapter.md",
     "docs/tools.md",
     "docs/architecture.md",
+    "docs/v0.8.0-implementation.md",
     "cordis.patch.yml",
     "icon.svg",
     "README.md",
@@ -79,7 +82,8 @@
         "@deepseek-ai/dsh-client-connection",
         "@deepseek-ai/dsh-api-remotes",
         "@deepseek-ai/dsh-client-ui-commands",
-        "@deepseek-ai/dsh-client-ui-conversation"
+        "@deepseek-ai/dsh-client-ui-conversation",
+        "@deepseek-ai/dsh-client-ui-sidebar-right"
       ]
     }
   }

@@ -18,7 +18,10 @@
 | `lib/enforce.js` | 三层强制与写作单元闸（`write-ahead` / `unit-gap` / `prefix-rewritten` / `gate-mismatch`） |
 | `lib/verify.js` | 写后结构核对、`drift` / `unsegmented` 检测与节奏诊断 |
 | `lib/compile.js` | 把已拍板决策编译成写作约束（必须发生 / 不得出现 / 义务 / canon） |
-| `lib/remote.js`、`lib/remote-contract.js` | Web remote：拍板台的 `panel` / `revertLast` |
+| `lib/panel.js` | v0.8：右栏读模型（overview / chapter 的按章聚合、canon 预览、无锚点标记） |
+| `lib/rewind.js` | v0.8：`planRewind` 影响计算 + `executeRewind` 安全回退/改选事务（含 `rewinds/` 快照） |
+| `lib/resume.js` | v0.8：回退后的可靠续写入口（宿主 `sessionController.prompt`；失败降级为复制文案） |
+| `lib/remote.js`、`lib/remote-contract.js` | Web remote：拍板台、overview / chapter / impact / rewind / resume |
 | `client.js` | Web 端：输入框上方的拍板台状态条 |
 
 ## 账本
@@ -27,6 +30,8 @@
 <工作区根>/.dsh-novel-beat/<书名>/book.json          账本（schemaVersion 2）
 <工作区根>/.dsh-novel-beat/<书名>/book.json.bak      每次原子写之前的上一版
 <工作区根>/.dsh-novel-beat/<书名>/revisions/<id>.md 段落快照（回退时按它重定位）
+<工作区根>/.dsh-novel-beat/<书名>/rewinds/<id>.md    v0.8 回退前正文全文快照
+<工作区根>/.dsh-novel-beat/<书名>/rewinds/<id>.json  v0.8 回退前 book.json 快照
 <工作区根>/.dsh-novel-beat/_sessions.json            会话模式（on/off、受保护的正文目录）
 ```
 
@@ -53,6 +58,13 @@
 - 每次落账后触发 `onDidCommit`（带 kind 与受影响对象），兄弟插件据此刷新。
 - 进程内只读服务 `ctx.get('novelBeat')`：`version` / `isOn(agentId)` / `resolveBook(cwd)` / `query({ cwd, book, chapter })` / `onDidCommit(listener)`——**没有任何写入入口**。
 - `audit[]` 记录越权/覆盖类动作（如 `canonOverride`）。
+
+## v0.8.0 右栏「拍板台」（开发中）
+
+- 读：`beatMode.overview(sessionId)` 返回统计与章节摘要；`beatMode.chapter(sessionId, chapter)` 返回单章决策/段落/canon/轻量影响。
+- 写：`beatMode.impact(sessionId, decisionId, {choice})` 只算不写；`beatMode.rewind(sessionId, decisionId, {choice, confirm, snapshot, expectedBookUpdatedAt})` 执行回退/改选；`beatMode.resume(sessionId, text)` 把续写指令通过宿主 `sessionController.prompt` 发回会话。
+- 安全边界：无锚点拒绝；正文 hash 不一致拒绝（不自动重定位）；正文/账本失败整体恢复；revision 追加不覆盖；改选必须作者在侧栏点击。
+- **不升 schemaVersion**：复用 `revision(kind='revert', reopen=true)`，旧 v0.7 仍可读 v0.8 账本。
 
 ## 调度器协议
 

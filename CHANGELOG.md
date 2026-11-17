@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.8.0 — 2026-11-17
+
+**主题：右栏「拍板台」——按章看决策、影响预览、安全回退、侧栏改选。**
+
+### 新增
+
+- **右栏「拍板台」**：官方 `sidebarRightTabs` / `sidebarRight` 槽位；会话头入口；按章手风琴 + 决策卡 + 同栏详情；空态/加载态/错误态；420px 适配。
+- **读模型**：`beatMode.overview` / `beatMode.chapter`；按章统计、章标题推断、旧账无锚点标记、轻量回退影响。
+- **影响预览**：`beatMode.impact`；给出删多少字、作废几段、撤回几条 canon、目标重落账、后续哪些决策重开、哪些章节不受影响。
+- **安全回退**：`beatMode.rewind`；保留选择或改选另一个走向；回退前存 `rewinds/<id>.md` + `.json`；正文/账本失败整体恢复；`revision(kind='revert', reopen=true)` 追加式保存。
+- **续写入口**：`beatMode.resume`；优先调用宿主 `sessionController.prompt` 把续写指令发回会话；失败降级为复制文案。
+- **侧栏改选**：作者点击选项 → 回退 + 目标重新落账 + 后续决策 `proposed`；凭据仍是 `origin:'author'`。
+
+### 安全边界
+
+- 无正文锚点的决策拒绝回退；正文 hash 不一致时侧栏拒绝，不自动重定位（`/beat revert N!` 仍是聊天内显式路径）。
+- 不升 schemaVersion；旧 v0.7 仍可读 v0.8 账本。
+- 不做跨章静默级联；第 11、12 章明确提示仍基于旧走向。
+
+### 界面与主题
+
+- **拍板台改用 DSH 主题 token**（`--dsw-alias-label-primary/secondary/tertiary`、`border-l*`、`state-*`、`bg-*`），浅色与深色主题都跟随宿主，不再写死深色值。此前写的 `--dsw-alias-text-primary` 等变量名在宿主里并不存在，浅色主题下会落到兜底色，白底上是 #e8e9ec 的浅灰字（对比度 1.2:1）。
+- **三级文字层次**：正文 18.9:1、次要 5.8:1、注释 3.7:1（浅色主题实测）；状态色另做 ink 版（压向正文色），已拍板 / 待拍板 / 警告小字不再发白。
+- 分隔线、抬升层、软底色改用 `color-mix` 跟随文字色，深色主题同样生效；旧线正文改用正文色，长段阅读更清楚。
+
+### 测试
+
+- `node --test` **147/147**；新增 `panel` / `rewind` / `resume` / `remote-contract` / client 侧栏注册测试。
+- 真实账本只读副本：12 章 / 35 决策 / 5 段 / 6,759 字；b10-2 回退 = 1,222 字 / 2 段 / 4 条 canon；正文 833 字；revision 追加。
+- 浅色 / 深色两套主题下用真实 token 服务端渲染拍板台并截图核对对比度。
+
 ## 0.7.0 — 2026-11-15
 
 **主题：从"靠模型自觉的工具集"变成"引擎兜底的决策事务"。开着就一定走流程。**
@@ -154,3 +185,7 @@
 
 - 五个工具（`beat_plan` / `beat_list` / `beat_decide` / `beat_gate` / `beat_compile`）。
 - 每章一个 `chNNN.json`；空白书实时拦截；结果编译成 novel-forge 的细纲格式。
+
+
+
+

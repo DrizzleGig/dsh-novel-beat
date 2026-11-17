@@ -29,19 +29,27 @@ function makeModule() {
 
 function makeContext({ mount } = {}) {
   const events = []
+  let contract = null
   const service = {
     status: async () => ({ ok: true, value: { on: false } }),
     setMode: async (_id, on) => ({ ok: true, value: { on } }),
     panel: async () => ({ ok: true, value: { on: false, text: '' } }),
     revertLast: async () => ({ ok: true, text: '' }),
+    overview: async () => ({ ok: true, value: { ok: true, on: false, book: null, stats: {} } }),
+    chapter: async () => ({ ok: true, value: { ok: true, book: null, chapter: 1, decisions: [] } }),
+    impact: async () => ({ ok: true, value: { ok: true, blockedReason: null } }),
+    rewind: async () => ({ ok: true, value: { ok: true } }),
+    resume: async () => ({ ok: true, value: { ok: true } }),
+    oldLine: async () => ({ ok: true, value: { ok: true, text: '' } }),
   }
   const cleanups = []
   const registrations = []
   const ctx = {
     remote: {
-      $mount: async (contract) => {
+      $mount: async (mounted) => {
+        contract = mounted
         events.push('mount')
-        if (mount) return mount(contract)
+        if (mount) return mount(mounted)
         return () => events.push('dispose')
       },
     },
@@ -72,6 +80,7 @@ function makeContext({ mount } = {}) {
     events,
     service,
     cleanups,
+    get contract() { return contract },
     get registration() { return registrations[0] ?? null },
     get registrations() { return registrations },
   }
@@ -84,6 +93,10 @@ test('client mounts the remote, reads remote.beatMode and registers the button',
   await mod.apply(ctx)
 
   assert.deepEqual(events.slice(0, 3), ['mount', 'get:remote.beatMode', 'inject:conversation.input.left'])
+  assert.deepEqual(
+    handle.contract.descriptors.map((descriptor) => descriptor.method),
+    ['status', 'setMode', 'panel', 'revertLast', 'overview', 'chapter', 'impact', 'rewind', 'resume', 'oldLine'],
+  )
   assert.equal(handle.registration.options.id, 'dsh-novel-beat-mode')
   assert.equal(handle.registration.options.name, 'conversation.input.left')
   assert.equal(typeof handle.registration.component, 'function')
@@ -140,4 +153,66 @@ test('client still registers the button when the mount fails', async () => {
   } finally {
     console.error = original
   }
+})
+
+test('client registers the right sidebar tab, body and header entry when the seat exists', async () => {
+  const handle = makeContext()
+  const tabTypes = []
+  const scopedSlots = []
+  const events = []
+  const scoped = {
+    get(name) {
+      if (name === 'sidebarRightTabs') {
+        return {
+          register(definition) {
+            tabTypes.push(definition)
+            return () => events.push('tab-dispose')
+          },
+        }
+      }
+      if (name === 'sidebarRight') {
+        return { openTab(kind) { events.push(`openTab:${kind}`) } }
+      }
+      return undefined
+    },
+    effect(fn) { return fn() },
+    slots: {
+      inject(owner, fn) {
+        events.push(`scoped-inject:${owner}`)
+        return fn()
+      },
+      register(options, component) {
+        scopedSlots.push({ options, component })
+        return {}
+      },
+    },
+  }
+  handle.ctx.inject = (names, fn) => {
+    events.push(`inject:${names.join(',')}`)
+    return fn(scoped)
+  }
+  await makeModule().apply(handle.ctx)
+
+  assert.deepEqual(tabTypes.map((entry) => [entry.id, entry.kind]), [
+    ['dsh-novel-beat-panel', 'novel-beat'],
+  ])
+  const body = scopedSlots.find((entry) => entry.options.name === 'sidebar.right.pane.tab')
+  assert.ok(body, '右栏 tab body 未注册')
+  assert.equal(body.options.key, 'dsh-novel-beat-panel')
+  const injected = body.options.inject('session-1')
+  assert.equal(injected.sessionId, 'session-1')
+  assert.equal(typeof injected.remote.overview, 'function')
+
+  const tree = body.component({ sessionId: 'session-1', remote: handle.service })
+  assert.equal(tree.type, 'div')
+  assert.equal(tree.props.className, 'beat-root')
+
+  const header = scopedSlots.find((entry) => entry.options.id === 'dsh-novel-beat-open')
+  assert.ok(header, '会话头入口未注册')
+  header.options.inject().open()
+  assert.ok(events.includes('openTab:novel-beat'))
+  const button = header.component({ open: () => events.push('header-click') })
+  assert.equal(button.type, 'button')
+  button.props.onClick()
+  assert.ok(events.includes('header-click'))
 })
