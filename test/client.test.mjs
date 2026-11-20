@@ -95,7 +95,7 @@ test('client mounts the remote, reads remote.beatMode and registers the button',
   assert.deepEqual(events.slice(0, 3), ['mount', 'get:remote.beatMode', 'inject:conversation.input.left'])
   assert.deepEqual(
     handle.contract.descriptors.map((descriptor) => descriptor.method),
-    ['status', 'setMode', 'panel', 'revertLast', 'overview', 'chapter', 'impact', 'rewind', 'resume', 'oldLine'],
+    ['status', 'setMode', 'panel', 'revertLast', 'overview', 'chapter', 'impact', 'rewind', 'resume', 'oldLine', 'timeline', 'health', 'search'],
   )
   assert.equal(handle.registration.options.id, 'dsh-novel-beat-mode')
   assert.equal(handle.registration.options.name, 'conversation.input.left')

@@ -103,7 +103,7 @@ test('beat_segment：登记刚写的这一段（快照 + hash + 挂决策点）'
   assert.equal(result.segment.status, 'committed');
 
   const snapshot = await readFile(
-    join(dir, '.dsh-novel-beat', BOOK, 'revisions', `${result.revision.id}.md`),
+    join(dir, '.dsh-novel-beat', BOOK, 'revisions', `${result.revisionRecord.id}.md`),
     'utf8',
   );
   assert.equal(snapshot, FIRST);

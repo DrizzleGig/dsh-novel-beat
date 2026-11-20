@@ -50,7 +50,7 @@ window.__ModuleLoader__.load({
       if (value === null || typeof value !== 'object' || Array.isArray(value)) throw new Error('expected a JSON object')
     })
     const resumeTextSchema = scalar((value) => {
-      if (typeof value !== 'string' || value.length === 0 || value.length > 500) throw new Error('resume text must be a non-empty string, at most 500 characters')
+      if (typeof value !== 'string' || value.length === 0 || value.length > 1200) throw new Error('resume text must be a non-empty string, at most 1200 characters')
     })
     const codec = (typeSymbol, schema) => ({ mode: 'strict', typeSymbol, create: () => schema })
     const param = (name, schema) => ({ name, wire: name, source: 'json', codec: codec(name, schema) })
@@ -105,6 +105,21 @@ window.__ModuleLoader__.load({
         {
           id: 'dsh-novel-beat#beatMode/oldLine', namespace: 'beatMode', service: 'beatMode', method: 'oldLine',
           invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema), param('decisionId', decisionIdSchema)],
+          result: codec('BeatPanel', objectResultSchema),
+        },
+        {
+          id: 'dsh-novel-beat#beatMode/timeline', namespace: 'beatMode', service: 'beatMode', method: 'timeline',
+          invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema), param('options', jsonObjectSchema)],
+          result: codec('BeatPanel', objectResultSchema),
+        },
+        {
+          id: 'dsh-novel-beat#beatMode/health', namespace: 'beatMode', service: 'beatMode', method: 'health',
+          invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema), param('options', jsonObjectSchema)],
+          result: codec('BeatPanel', objectResultSchema),
+        },
+        {
+          id: 'dsh-novel-beat#beatMode/search', namespace: 'beatMode', service: 'beatMode', method: 'search',
+          invocation: { kind: 'direct' }, parameters: [param('sessionId', sessionIdSchema), param('options', jsonObjectSchema)],
           result: codec('BeatPanel', objectResultSchema),
         },
       ],
@@ -197,9 +212,9 @@ window.__ModuleLoader__.load({
         marginRight: 6,
         padding: '0 8px',
         borderRadius: 6,
-        border: '1px solid var(--beat-line)',
-        background: state.on ? 'var(--beat-brand)' : 'transparent',
-        color: state.on ? 'var(--beat-on-accent)' : 'var(--beat-muted)',
+        border: '1px solid color-mix(in srgb, currentColor 20%, transparent)',
+        background: state.on ? 'var(--beat-brand, #c2452d)' : 'transparent',
+        color: state.on ? '#ffffff' : 'inherit',
         fontSize: 12,
         lineHeight: '22px',
         cursor: 'pointer',
@@ -473,6 +488,261 @@ window.__ModuleLoader__.load({
 @keyframes beat-pulse{0%{background-position:0% 0}100%{background-position:-200% 0}}
 .beat-foot{flex:none;display:flex;align-items:center;gap:6px;height:29px;padding:0 12px;border-top:1px solid var(--beat-line);color:var(--beat-faint);font-size:9.5px;font-family:var(--beat-mono)}
 .beat-foot .beat-spacer{flex:1}
+
+.beat-root{
+  --beat-paper:#fbf9f4;--beat-paper-2:#f5f1e8;--beat-card:#fffdf8;
+  --beat-ink:#1c1b18;--beat-ink-2:#6e675c;--beat-ink-3:#797266;
+  --beat-line:rgba(28,27,24,.10);--beat-line-2:rgba(28,27,24,.18);
+  --beat-red:#c2452d;--beat-red-soft:rgba(194,69,45,.09);--beat-red-line:rgba(194,69,45,.30);
+  --beat-jade:#2e7d6b;--beat-jade-soft:rgba(46,125,107,.09);--beat-jade-line:rgba(46,125,107,.28);
+  --beat-amber:#8f5d12;--beat-amber-soft:rgba(143,93,18,.10);--beat-amber-line:rgba(143,93,18,.30);
+  --beat-text:var(--beat-ink);--beat-muted:var(--beat-ink-2);--beat-faint:var(--beat-ink-3);
+  --beat-brand:var(--beat-red);--beat-brand-ink:var(--beat-red);--beat-brand-2:var(--beat-amber);
+  --beat-brand-3:var(--beat-jade);--beat-pink:var(--beat-red);--beat-orange:var(--beat-amber);
+  --beat-cyan:var(--beat-jade);--beat-grad:var(--beat-ink);--beat-on-accent:var(--beat-paper);
+  --beat-brand-soft:var(--beat-red-soft);--beat-brand-line:var(--beat-red-line);
+  --beat-ok:var(--beat-jade);--beat-ok-ink:var(--beat-jade);--beat-ok-soft:var(--beat-jade-soft);--beat-ok-line:var(--beat-jade-line);
+  --beat-warn:var(--beat-amber);--beat-warn-ink:var(--beat-amber);--beat-warn-soft:var(--beat-amber-soft);--beat-warn-line:var(--beat-amber-line);
+  --beat-danger:var(--beat-red);--beat-danger-ink:var(--beat-red);--beat-danger-soft:var(--beat-red-soft);--beat-danger-line:var(--beat-red-line);
+  --beat-layer1:var(--beat-paper-2);--beat-layer2:color-mix(in srgb,var(--beat-paper-2) 70%,var(--beat-ink) 5%);
+  --beat-mono:"Cascadia Code","Cascadia Mono",Consolas,ui-monospace,monospace;
+  --beat-page:var(--beat-paper);--beat-sheet-bg:var(--beat-card);--beat-tone:var(--beat-ink);--beat-tone-text:var(--beat-ink);
+  width:100%;min-width:0;overflow:hidden;background:var(--beat-paper);color:var(--beat-ink);
+  font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,"Segoe UI",sans-serif;font-size:12.5px;line-height:1.55
+}
+body[data-ds-dark-theme] .beat-root{
+  --beat-paper:#141416;--beat-paper-2:#19191c;--beat-card:#1d1d21;
+  --beat-ink:#f1ede4;--beat-ink-2:#b7b0a4;--beat-ink-3:#847d71;
+  --beat-line:rgba(241,237,228,.10);--beat-line-2:rgba(241,237,228,.18);
+  --beat-red:#e2603f;--beat-jade:#58b49d;--beat-amber:#d3a24a;
+  --beat-red-soft:color-mix(in srgb,var(--beat-red) 12%,transparent);--beat-red-line:color-mix(in srgb,var(--beat-red) 34%,transparent);
+  --beat-jade-soft:color-mix(in srgb,var(--beat-jade) 12%,transparent);--beat-jade-line:color-mix(in srgb,var(--beat-jade) 30%,transparent);
+  --beat-amber-soft:color-mix(in srgb,var(--beat-amber) 12%,transparent);--beat-amber-line:color-mix(in srgb,var(--beat-amber) 32%,transparent)
+}
+.beat-root{height:100%;min-height:0;display:flex;flex-direction:column;position:relative}
+.beat-root *{box-sizing:border-box;font-variant-numeric:tabular-nums}
+.beat-head{flex:none;padding:9px 16px 0;border:0;background:var(--beat-paper);z-index:1}
+.beat-head:before{display:none}
+.beat-top{display:flex;align-items:center;gap:7px;min-width:0}
+.beat-eyebrow{height:14px;color:var(--beat-ink-3);font-size:9.5px;letter-spacing:.14em}
+.beat-eyebrow:before{content:"";width:14px;height:1px;background:var(--beat-red);opacity:.9;flex:none}
+.beat-eyebrow .beat-spacer{flex:1}
+.beat-icon{opacity:.55;transition:opacity .12s,color .12s,background .12s}
+.beat-top:hover .beat-icon,.beat-icon:focus-visible{opacity:1}
+.beat-eyes{display:flex;align-items:flex-start;gap:12px;margin-top:6px;min-width:0}
+.beat-eyes .beat-chap-grow{flex:1;min-width:0}
+.beat-book{font-size:15.5px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-sub{display:flex;align-items:center;gap:6px;margin-top:3px;color:var(--beat-ink-2);font-size:10px;white-space:nowrap;overflow:hidden}
+.beat-sub b{font-family:var(--beat-mono);font-weight:500;color:var(--beat-ink)}
+.beat-sub .beat-dotsep{width:2px;height:2px;border-radius:50%;background:var(--beat-ink-3);opacity:.6;flex:none}
+.beat-mode{display:inline-flex;align-items:center;gap:4px;color:var(--beat-jade);font-size:9.5px}
+.beat-mode i{width:5px;height:5px;border-radius:50%;display:block;background:var(--beat-jade);box-shadow:0 0 0 3px var(--beat-jade-soft)}
+.beat-mode[data-on="0"]{color:var(--beat-amber)}.beat-mode[data-on="0"] i{background:var(--beat-amber);box-shadow:0 0 0 3px var(--beat-amber-soft)}
+.beat-ring{flex:none;width:44px;height:44px;position:relative}
+.beat-ring svg{display:block;width:44px;height:44px;transform:rotate(-90deg)}
+.beat-ring .track{fill:none;stroke:var(--beat-line-2);stroke-width:3}
+.beat-ring .val{fill:none;stroke:var(--beat-red);stroke-width:3;stroke-linecap:round;transition:stroke-dashoffset .15s}
+.beat-ring[data-empty="1"] .val{stroke:var(--beat-ink-3)}
+.beat-ring .ctr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1}
+.beat-ring .ctr b{font-family:var(--beat-mono);font-size:12px;font-weight:600}
+.beat-ring .ctr span{font-size:7px;color:var(--beat-ink-3);margin-top:2px}
+.beat-stats{height:34px;display:flex;align-items:center;gap:0;margin-top:11px;border:0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line);border-radius:0;background:transparent;overflow:hidden}
+.beat-stat{flex:1;min-width:0;display:flex;align-items:baseline;gap:4px;padding:0 8px;background:transparent;border:0;border-left:1px solid var(--beat-line);box-shadow:none}
+.beat-stat:first-child{border-left:0;padding-left:0}
+.beat-stat b{font-family:var(--beat-mono);font-size:13px;font-weight:600;line-height:1.2;color:var(--beat-ink);white-space:nowrap}
+.beat-stat.t-jade b{color:var(--beat-jade)}.beat-stat.t-amber b{color:var(--beat-amber)}
+.beat-stat span{font-size:9px;color:var(--beat-ink-3);margin:0;white-space:nowrap}
+.beat-tabs{display:flex;align-items:center;gap:2px;margin-top:8px;border-bottom:1px solid var(--beat-line)}
+.beat-tab{position:relative;height:34px;display:inline-flex;align-items:center;gap:5px;padding:0 10px 1px;border:0;border-radius:0;background:transparent;box-shadow:none;color:var(--beat-ink-3);font:inherit;font-size:11.5px;white-space:nowrap;cursor:pointer}
+.beat-tab svg{width:12px;height:12px;opacity:.8}
+.beat-tab b{font-family:var(--beat-mono);font-size:9px;font-weight:500;color:var(--beat-ink-3);background:var(--beat-paper-2);border:1px solid var(--beat-line);border-radius:9px;padding:0 5px;line-height:14px}
+.beat-tab[data-a="1"]{color:var(--beat-ink);font-weight:600}
+.beat-tab[data-a="1"]:after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;background:var(--beat-red)}
+.beat-tab[data-a="1"] b{color:var(--beat-red);border-color:var(--beat-red-line);background:var(--beat-red-soft)}
+.beat-tab:disabled{opacity:.45;cursor:default}
+.beat-filters{flex:none;display:flex;align-items:center;gap:6px;padding:9px 16px 8px;border:0;background:var(--beat-paper)}
+.beat-search{flex:none;display:flex;align-items:center;gap:7px;height:36px;padding:0 16px;border-bottom:1px solid var(--beat-line);background:var(--beat-paper);transition:box-shadow .12s}
+.beat-search:focus-within{box-shadow:inset 0 -1px 0 var(--beat-red)}
+.beat-search-ico{width:13px;height:13px;color:var(--beat-ink-3);flex:none}
+.beat-search-input{flex:1;min-width:0;height:100%;padding:0;border:0;outline:0;background:transparent;color:var(--beat-ink);font:11.5px "Microsoft YaHei UI","Microsoft YaHei",sans-serif}
+.beat-search-input::placeholder{color:var(--beat-ink-3)}
+.beat-search-input::-webkit-search-cancel-button{display:none}
+.beat-search-clear{width:20px;height:20px;flex:none;border:0;border-radius:50%;background:var(--beat-paper-2);color:var(--beat-ink-3);font:13px/20px var(--beat-mono);padding:0;cursor:pointer}
+.beat-search-clear:hover{color:var(--beat-ink)}
+.beat-search-results{flex:1;min-height:0;overflow:auto;padding:0 16px 10px}
+.beat-search-head{padding:10px 0 7px;border-bottom:1px solid var(--beat-line);color:var(--beat-ink-3);font:9px var(--beat-mono);letter-spacing:.02em}
+.beat-sr{padding:9px 0;border-bottom:1px dashed var(--beat-line);cursor:pointer;border-radius:2px}
+.beat-sr:hover{background:color-mix(in srgb,var(--beat-paper-2) 60%,transparent)}
+.beat-sr-top{display:flex;align-items:center;gap:6px;color:var(--beat-ink-3);font:9px var(--beat-mono);min-width:0}
+.beat-sr-kind{font:8.5px "Microsoft YaHei UI",sans-serif;padding:0 4px;border:1px solid var(--beat-line-2);border-radius:3px;background:var(--beat-paper-2);color:var(--beat-ink-2)}
+.beat-sr[data-kind="obligation"] .beat-sr-kind{color:var(--beat-amber);border-color:var(--beat-amber-line);background:var(--beat-amber-soft)}
+.beat-sr-id{margin-left:auto;color:var(--beat-ink-3);font:8.5px var(--beat-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-sr-title{font-size:11.5px;color:var(--beat-ink);margin-top:3px;line-height:1.45}
+.beat-sr-choice{font-size:10px;color:var(--beat-ink-2);margin-top:2px}
+.beat-sr-snippet{font:9px var(--beat-mono);color:var(--beat-ink-3);margin-top:3px;line-height:1.5;word-break:break-word}
+.beat-chip{height:23px;padding:0 9px;border:1px solid var(--beat-line);border-radius:12px;background:transparent;color:var(--beat-ink-2);font:inherit;font-size:10px;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.beat-chip:hover{background:var(--beat-paper-2);color:var(--beat-ink)}
+.beat-chip[data-a="1"]{background:var(--beat-ink);border-color:var(--beat-ink);color:var(--beat-paper);box-shadow:none}
+.beat-chip b{font-family:var(--beat-mono);font-size:9px;color:var(--beat-ink-3);font-weight:500}
+.beat-chip[data-a="1"] b{color:color-mix(in srgb,var(--beat-paper) 72%,var(--beat-ink))}
+.beat-sort{margin-left:auto;color:var(--beat-ink-3);font:9.5px var(--beat-mono);white-space:nowrap}
+.beat-list{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:0 0 6px}
+.beat-chap{display:flex;align-items:center;gap:10px;width:100%;min-height:66px;padding:8px 16px;border:0;border-bottom:1px solid var(--beat-line);background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit;position:relative;transition:background .12s}
+.beat-chap:before{content:"";position:absolute;left:0;top:0;bottom:0;width:0;background:var(--beat-red);opacity:1;transition:width .12s}
+.beat-chap:hover{background:color-mix(in srgb,var(--beat-paper-2) 55%,transparent)}
+.beat-chap[data-open="1"]{background:linear-gradient(90deg,var(--beat-paper-2),transparent 72%);border-bottom-color:transparent}
+.beat-chap[data-open="1"]:before{width:2px}
+.beat-chap[data-tone="done"]{--beat-state:var(--beat-jade)}.beat-chap[data-tone="open"],.beat-chap[data-tone="stale"]{--beat-state:var(--beat-amber)}.beat-chap[data-tone="legacy"]{--beat-state:var(--beat-ink-3)}
+.beat-chap-dot{display:none}
+.beat-chap-no{width:30px;flex:none;text-align:right;font-family:var(--beat-mono);font-size:18px;font-weight:300;color:var(--beat-ink-3);white-space:nowrap}
+.beat-chap[data-current="1"] .beat-chap-no{color:var(--beat-red);font-weight:500}
+.beat-chap[data-open="1"] .beat-chap-no{color:var(--beat-red);font-weight:500}
+.beat-chap-grow{display:block;flex:1;min-width:0}
+.beat-chap-line{display:block;min-width:0}
+.beat-chap-name{display:block;font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-chap[data-current="1"] .beat-chap-name{font-size:13px}
+.beat-chap-meta{display:flex;align-items:center;gap:5px;margin-top:2px;color:var(--beat-ink-3);font-size:9.5px;white-space:nowrap;overflow:hidden}
+.beat-chap-meta b{font-family:var(--beat-mono);font-weight:500;color:var(--beat-ink-2)}
+.beat-segbar{display:flex;gap:2px;margin-top:5px}
+.beat-segbar i{display:block;height:3px;flex:1;max-width:16px;border-radius:2px;background:var(--beat-line-2)}
+.beat-segbar i.done{background:var(--beat-jade)}.beat-segbar i.open{background:var(--beat-amber)}.beat-segbar i.legacy{background:var(--beat-ink-3);opacity:.65}
+.beat-chap-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.beat-chap-state{height:auto;padding:0;border:0;background:transparent;font-size:9.5px;color:var(--beat-state,var(--beat-ink-3));letter-spacing:.02em}
+.beat-chap-state.ok,.beat-chap-state.warn,.beat-chap-state.muted{color:var(--beat-state,var(--beat-ink-3));background:transparent;border:0}
+.beat-chev{width:12px;height:12px;color:var(--beat-ink-3);transition:transform .15s}
+.beat-chap[data-open="1"] .beat-chev{transform:rotate(90deg);color:var(--beat-ink-2)}
+.beat-decs{padding:2px 16px 4px 56px;border-bottom:1px solid var(--beat-line);background:linear-gradient(180deg,color-mix(in srgb,var(--beat-ink) 2%,transparent),transparent);position:relative}
+.beat-decs:before{left:16px;top:3px;bottom:9px;width:2px;background:var(--beat-red);opacity:.5}
+.beat-dec{display:flex;align-items:flex-start;gap:9px;padding:8px 8px 8px 0;border-bottom:1px dashed var(--beat-line);border-radius:0;position:relative;min-height:0;transition:background .12s,box-shadow .12s}
+.beat-dec:last-child{border-bottom:0}
+.beat-dec:before{display:none}
+.beat-dec:hover{background:color-mix(in srgb,var(--beat-paper-2) 65%,transparent)}
+.beat-seal{width:19px;height:19px;flex:none;margin-top:1px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--beat-jade);border:1px solid var(--beat-jade-line);background:var(--beat-jade-soft);transform:rotate(-3deg)}
+.beat-seal[data-state="open"]{color:var(--beat-amber);border-color:var(--beat-amber-line);background:var(--beat-amber-soft);border-style:dashed}
+.beat-seal[data-state="legacy"]{color:var(--beat-ink-3);border-color:var(--beat-line-2);background:transparent}
+.beat-dec-grow{flex:1;min-width:0}
+.beat-dec-title{font-size:12px;line-height:1.4;color:var(--beat-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-dec-choice{font-size:10.5px;color:var(--beat-ink-2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-dec-choice[data-empty="1"]{color:var(--beat-ink-3)}
+.beat-dec-meta{display:flex;align-items:center;gap:5px;margin-top:4px;color:var(--beat-ink-3);font-size:9px;font-family:var(--beat-mono);white-space:nowrap;overflow:hidden}
+.beat-kind{height:16px;padding:0 4px;border-radius:3px;border:1px solid var(--beat-line-2);background:var(--beat-paper-2);color:var(--beat-ink-2);font:8.5px/14px var(--beat-mono);white-space:nowrap}
+.beat-dec-right{display:flex;align-items:flex-start;padding-top:2px;flex:none}
+.beat-dec-badge{height:auto;padding:0;border:0;background:transparent;color:var(--beat-ink-3);font-size:9px;white-space:nowrap}
+.beat-dec[data-state="committed"] .beat-dec-badge{color:var(--beat-jade)}.beat-dec[data-state="open"] .beat-dec-badge{color:var(--beat-amber)}.beat-dec[data-state="legacy"] .beat-dec-badge{color:var(--beat-ink-3)}
+.beat-dec[data-a="1"]{background:var(--beat-card);border:1px solid var(--beat-line-2);border-radius:7px;padding:8px 8px 8px 9px;margin:5px 0;box-shadow:0 1px 0 color-mix(in srgb,var(--beat-ink) 3%,transparent),0 6px 15px color-mix(in srgb,var(--beat-ink) 6%,transparent)}
+.beat-dec[data-a="1"]:after{content:"";position:absolute;left:-1px;top:8px;bottom:8px;width:2px;background:var(--beat-red);border-radius:2px}
+.beat-detail{margin:8px 0 10px;border:1px solid var(--beat-line-2);border-radius:10px;background:var(--beat-card);padding:0;box-shadow:0 8px 22px color-mix(in srgb,var(--beat-ink) 9%,transparent);position:relative;overflow:hidden}
+.beat-detail:before{content:"";position:absolute;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,var(--beat-red),color-mix(in srgb,var(--beat-red) 35%,transparent) 55%,transparent)}
+.beat-detail-inner{padding:12px 13px}
+.beat-detail-stamp{position:absolute;right:12px;top:12px;width:34px;height:34px;border:1.5px solid var(--beat-red);border-radius:4px;color:var(--beat-red);font-size:9px;line-height:1.15;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(7deg);opacity:.9;letter-spacing:.06em}
+.beat-detail-top{display:flex;align-items:center;gap:5px;color:var(--beat-ink-3);font-size:9px;font-family:var(--beat-mono);padding-right:38px}
+.beat-detail-top .beat-spacer{flex:1}
+.beat-detail-close{width:19px;height:19px;border:0;border-radius:4px;background:transparent;color:var(--beat-ink-3);cursor:pointer;font:13px/1 var(--beat-mono);padding:0;flex:none}
+.beat-detail-close:hover{background:var(--beat-paper-2);color:var(--beat-ink)}
+.beat-detail-title{font-size:13.5px;font-weight:600;margin:5px 32px 2px 0;line-height:1.35}
+.beat-detail-change{font-size:10px;color:var(--beat-ink-2);margin-top:1px;line-height:1.5;white-space:normal}
+.beat-cur{margin-top:9px;border:1px solid var(--beat-jade-line);border-radius:7px;background:var(--beat-jade-soft);padding:7px 9px;display:flex;align-items:center;gap:8px}
+.beat-cur-mark{width:16px;height:16px;border-radius:50%;background:var(--beat-jade);color:var(--beat-paper);display:flex;align-items:center;justify-content:center;font-size:9px;flex:none}
+.beat-cur-grow{flex:1;min-width:0}.beat-cur-k{font-size:8.5px;color:var(--beat-ink-3)}
+.beat-cur-v{font-size:11.5px;color:var(--beat-ink);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-cur-tag{font-size:8.5px;color:var(--beat-jade);border:1px solid var(--beat-jade-line);background:transparent;padding:1px 4px;border-radius:3px;white-space:nowrap}
+.beat-opts{margin-top:7px;display:flex;flex-direction:column;gap:2px}
+.beat-opt{display:flex;align-items:flex-start;gap:7px;padding:4px 2px;border-radius:4px;color:var(--beat-ink-2);font-size:10.5px;line-height:1.45}
+.beat-opt-letter{width:13px;flex:none;font-family:var(--beat-mono);font-size:9px;color:var(--beat-ink-3);margin-top:1px}
+.beat-opt[data-cur="1"] .beat-opt-letter{color:var(--beat-red);font-weight:600}.beat-opt[data-cur="1"] .beat-opt-label{color:var(--beat-ink)}
+.beat-opt-label{flex:1;min-width:0}.beat-opt-impact{font-size:9.5px;color:var(--beat-ink-3);margin-top:1px;line-height:1.45}
+.beat-changes{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.beat-change{font:8.5px/1.4 var(--beat-mono);color:var(--beat-ink-2);border:1px solid var(--beat-line);background:var(--beat-paper);border-radius:3px;padding:1px 4px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.beat-seg{margin-top:6px;color:var(--beat-ink-3);font-size:9px;font-family:var(--beat-mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-impact{display:flex;gap:6px;margin-top:8px;padding:7px 8px;border:0;border-top:1px dashed var(--beat-amber-line);background:var(--beat-amber-soft);border-radius:0 0 5px 5px;color:color-mix(in srgb,var(--beat-amber) 70%,var(--beat-ink));font-size:9px;line-height:1.5}
+.beat-impact svg{flex:none;margin-top:1px}.beat-blocked{margin-top:8px;padding:6px 8px;border:1px dashed var(--beat-line-2);border-radius:5px;color:var(--beat-ink-2);font-size:9.5px;line-height:1.45}
+.beat-detail-actions{display:flex;gap:6px;margin-top:9px}
+.beat-btn{height:30px;border-radius:6px;border:1px solid var(--beat-line-2);background:transparent;color:var(--beat-ink-2);font:inherit;font-size:10.5px;padding:0 8px;white-space:nowrap;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.beat-btn[data-p="1"]{flex:1;background:var(--beat-ink);border-color:var(--beat-ink);color:var(--beat-paper);font-weight:600}
+.beat-btn:hover:not(:disabled){filter:brightness(.96)}.beat-btn:disabled{opacity:.5;cursor:default}
+.beat-notice{margin:8px 16px 0;border-color:var(--beat-jade-line);background:var(--beat-jade-soft);color:var(--beat-jade)}
+.beat-banner{margin:8px 16px 0;border-color:var(--beat-amber-line);background:var(--beat-amber-soft);color:var(--beat-amber)}
+.beat-foot{height:30px;padding:0 16px;background:linear-gradient(180deg,transparent,var(--beat-paper-2));border-top:1px solid var(--beat-line);color:var(--beat-ink-3);font-size:9px}
+.beat-tab-empty{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;color:var(--beat-ink-2);text-align:center;font-size:11px}
+.beat-tab-empty b{color:var(--beat-ink);font-size:12px;font-weight:600;margin-bottom:4px}
+.beat-skel{background:linear-gradient(90deg,var(--beat-paper-2),var(--beat-card),var(--beat-paper-2));background-size:200% 100%}
+.beat-tab-warn{color:var(--beat-red)!important;border-color:var(--beat-red-line)!important;background:var(--beat-red-soft)!important}
+/* timeline */
+.beat-tl{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.beat-tl-filters{padding:9px 16px 8px;border-bottom:1px solid var(--beat-line);overflow:auto;scrollbar-width:none}
+.beat-tl-filters::-webkit-scrollbar{display:none}
+.beat-tl-list{flex:1;min-height:0;overflow:auto;padding:2px 16px 10px;position:relative}
+.beat-tl-day-title{font:9px var(--beat-mono);color:var(--beat-ink-3);letter-spacing:.08em;margin:10px 0 2px 20px}
+.beat-tl-entry{position:relative;display:flex;gap:9px;padding:7px 0 9px 20px;cursor:default}
+.beat-tl-entry[role="button"]{cursor:pointer}
+.beat-tl-entry[role="button"]:hover .beat-tl-body{background:color-mix(in srgb,var(--beat-paper-2) 60%,transparent)}
+.beat-tl-entry:before{content:"";position:absolute;left:4px;top:0;bottom:0;width:1px;background:color-mix(in srgb,var(--beat-ink) 12%,transparent)}
+.beat-tl-day:first-child .beat-tl-entry:first-child:before{top:14px}
+.beat-tl-day:last-child .beat-tl-entry:last-child:before{bottom:calc(100% - 15px)}
+.beat-tl-node{position:absolute;left:1px;top:14px;width:7px;height:7px;border-radius:50%;background:var(--beat-ink-2);box-shadow:0 0 0 3px var(--beat-paper);z-index:1}
+.beat-tl-entry[data-type="commit"] .beat-tl-node{background:var(--beat-jade)}
+.beat-tl-entry[data-type="revert"] .beat-tl-node{background:var(--beat-red)}
+.beat-tl-entry[data-type="segment"] .beat-tl-node{background:color-mix(in srgb,var(--beat-ink) 45%,var(--beat-paper))}
+.beat-tl-entry[data-type="verify"] .beat-tl-node,.beat-tl-entry[data-type="waive"] .beat-tl-node{background:var(--beat-amber)}
+.beat-tl-entry[data-type="stale"] .beat-tl-node{background:var(--beat-paper);border:1.5px solid var(--beat-red)}
+.beat-tl-entry[data-type="check"] .beat-tl-node{background:var(--beat-ink-3)}
+.beat-tl-body{flex:1;min-width:0;padding:0 2px 8px;border-bottom:1px dashed var(--beat-line);border-radius:4px;transition:background .12s}
+.beat-tl-top{display:flex;align-items:center;gap:6px;color:var(--beat-ink-3);font-size:9px;font-family:var(--beat-mono)}
+.beat-tl-time{color:var(--beat-ink-3)}
+.beat-tl-ch{color:var(--beat-ink-3)}
+.beat-tl-kind{font-family:var(--beat-sans,var(--beat-mono));font-size:8.5px;border-color:var(--beat-line-2);background:var(--beat-paper-2);color:var(--beat-ink-2)}
+.beat-tl-entry[data-type="commit"] .beat-tl-kind{color:var(--beat-jade);border-color:var(--beat-jade-line);background:var(--beat-jade-soft)}
+.beat-tl-entry[data-type="revert"] .beat-tl-kind{color:var(--beat-red);border-color:var(--beat-red-line);background:var(--beat-red-soft)}
+.beat-tl-entry[data-type="verify"] .beat-tl-kind,.beat-tl-entry[data-type="waive"] .beat-tl-kind{color:var(--beat-amber);border-color:var(--beat-amber-line);background:var(--beat-amber-soft)}
+.beat-tl-summary{font-size:11.5px;line-height:1.5;color:var(--beat-ink);margin-top:2px}
+.beat-tl-meta{font:9px var(--beat-mono);color:var(--beat-ink-3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-tl-link{height:21px;margin-top:5px;padding:0 7px;border:1px solid var(--beat-red-line);border-radius:5px;background:var(--beat-red-soft);color:var(--beat-red);font:9.5px var(--beat-sans,sans-serif);cursor:pointer}
+.beat-tl-foot{flex:none;height:29px;display:flex;align-items:center;padding:0 16px;border-top:1px solid var(--beat-line);color:var(--beat-ink-3);font:9px var(--beat-mono);background:linear-gradient(180deg,transparent,var(--beat-paper-2))}
+/* health */
+.beat-hl{flex:1;min-height:0;overflow:auto;padding:10px 16px 16px}
+.beat-hl-head{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.beat-hl-title{font-size:13px;font-weight:600}
+.beat-hl-chapter{font:9px var(--beat-mono);color:var(--beat-ink-3)}
+.beat-hl-select{height:24px;max-width:150px;border:1px solid var(--beat-line-2);border-radius:6px;background:var(--beat-paper);color:var(--beat-ink);font:10px var(--beat-sans,sans-serif);padding:0 6px}
+.beat-hl-summary{display:flex;align-items:center;gap:18px;margin-top:10px;padding:10px 12px;border:1px solid var(--beat-line);border-left:3px solid var(--beat-jade);border-radius:10px;background:var(--beat-card)}
+.beat-hl-summary[data-level="block"]{border-left-color:var(--beat-red)}
+.beat-hl-summary[data-level="warn"]{border-left-color:var(--beat-amber)}
+.beat-hl-stat b{display:block;font:18px/1 var(--beat-mono);color:var(--beat-ink)}
+.beat-hl-stat span{display:block;font-size:9px;color:var(--beat-ink-3);margin-top:3px}
+.beat-hl-summary[data-level="block"] .beat-hl-stat:first-child b{color:var(--beat-red)}
+.beat-hl-summary[data-level="warn"] .beat-hl-stat:nth-child(2) b{color:var(--beat-amber)}
+.beat-hl-level{margin-left:auto;font-size:10px;color:var(--beat-ink-2);text-align:right}
+.beat-hl-checks{display:grid;grid-template-columns:1fr 1fr;gap:1px 14px;margin-top:10px;padding:7px 0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line)}
+.beat-hl-check{display:flex;align-items:center;gap:6px;height:24px;min-width:0}
+.beat-hl-check-dot{width:5px;height:5px;border-radius:50%;flex:none;background:var(--beat-jade)}
+.beat-hl-check[data-sev="warn"] .beat-hl-check-dot{background:var(--beat-amber)}
+.beat-hl-check[data-sev="block"] .beat-hl-check-dot{background:var(--beat-red)}
+.beat-hl-check[data-sev="info"] .beat-hl-check-dot{background:var(--beat-ink-3)}
+.beat-hl-check-l{font-size:9.5px;color:var(--beat-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-hl-check-n{margin-left:auto;font:8.5px var(--beat-mono);color:var(--beat-ink-3)}
+.beat-hl-check[data-sev="block"] .beat-hl-check-n{color:var(--beat-red)}
+.beat-hl-check[data-sev="warn"] .beat-hl-check-n{color:var(--beat-amber)}
+.beat-hl-issues{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.beat-hl-issue{border:1px solid var(--beat-line);border-left:2px solid var(--beat-amber);border-radius:8px;background:var(--beat-card);padding:9px 10px}
+.beat-hl-issue[data-sev="block"]{border-left-color:var(--beat-red)}
+.beat-hl-issue[data-sev="info"]{border-left-color:var(--beat-ink-3)}
+.beat-hl-issue-top{display:flex;align-items:center;gap:6px}
+.beat-hl-code{font:9px var(--beat-mono);color:var(--beat-amber);letter-spacing:.02em}
+.beat-hl-issue[data-sev="block"] .beat-hl-code{color:var(--beat-red)}
+.beat-hl-issue[data-sev="info"] .beat-hl-code{color:var(--beat-ink-3)}
+.beat-hl-count{margin-left:auto;font:9px var(--beat-mono);color:var(--beat-ink-3)}
+.beat-hl-item{margin-top:6px}
+.beat-hl-item-t{font-size:11px;color:var(--beat-ink)}
+.beat-hl-item-d{font:9.5px var(--beat-mono);color:var(--beat-ink-3);line-height:1.5;margin-top:1px;word-break:break-word}
+.beat-hl-action{height:23px;margin-top:7px;padding:0 8px;border:1px solid var(--beat-line-2);border-radius:5px;background:transparent;color:var(--beat-ink-2);font:9.5px var(--beat-sans,sans-serif);cursor:pointer}
+.beat-hl-action:hover{background:var(--beat-paper-2);color:var(--beat-ink)}
+.beat-hl-ok{display:flex;gap:10px;align-items:center;margin-top:12px;padding:12px;border:1px solid var(--beat-jade-line);border-radius:9px;background:var(--beat-jade-soft)}
+.beat-hl-ok-mark{width:22px;height:22px;border-radius:50%;background:var(--beat-jade);color:var(--beat-paper);display:flex;align-items:center;justify-content:center;font-size:11px;flex:none}
+.beat-hl-ok b{display:block;font-size:11.5px;color:var(--beat-ink)}
+.beat-hl-ok span{display:block;font-size:9.5px;color:var(--beat-ink-2);margin-top:2px}
+.beat-hl-note{margin-top:10px;padding:7px 8px;border:1px dashed var(--beat-line-2);border-radius:6px;color:var(--beat-ink-2);font-size:9.5px}
+.beat-hl-foot{margin-top:12px;color:var(--beat-ink-3);font:9px var(--beat-mono);text-align:center}
+@media (prefers-reduced-motion:reduce){.beat-root *, .beat-root *:before, .beat-root *:after{transition-duration:0s!important;animation-duration:.01ms!important}}
 `
 
     function formatNumber(value) {
@@ -482,14 +752,8 @@ window.__ModuleLoader__.load({
     }
 
     const KIND_TONE = {
-      动作: '#f59e0b',
-      知情: '#38bdf8',
-      关系: '#f472b6',
-      得失: '#a78bfa',
-      状态: '#5fae8b',
-      承诺: '#eab308',
-      时序: '#22d3ee',
-      分叉: '#7d95fb',
+      动作: '#a9701b', 知情: '#2e7d6b', 关系: '#c2452d', 得失: '#6e675c',
+      状态: '#2e7d6b', 承诺: '#a9701b', 时序: '#6e675c', 分叉: '#c2452d',
     }
 
     function kindTone(kind) {
@@ -503,6 +767,52 @@ window.__ModuleLoader__.load({
       } catch {
         return String(value)
       }
+    }
+
+    function formatDay(value) {
+      if (!value) return '未知时间'
+      try {
+        return new Date(value).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })
+      } catch {
+        return '未知时间'
+      }
+    }
+
+    function formatClock(value) {
+      if (!value) return '—'
+      try {
+        return new Date(value).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      } catch {
+        return '—'
+      }
+    }
+
+    const TIMELINE_LABELS = {
+      plan: '登记岔路', fork: '插旗', commit: '拍板', segment: '登记',
+      revert: '回退', verify: '体检', waive: '豁免', override: '覆盖',
+      stale: '待复核', check: '续写检查',
+    }
+
+    const HEALTH_CHECKS = [
+      ['OPEN_DECISION', '未答决策'],
+      ['AWAITING_SEGMENT', '未登记段落'],
+      ['PENDING_CONFIRM', '待确认设定'],
+      ['NEEDS_CHECK', '续写检查'],
+      ['DRIFT', '段落漂移'],
+      ['UNSEGMENTED', '未登记区间'],
+      ['OVERDUE_OBLIGATION', '到期义务'],
+      ['STALE', '待复核'],
+      ['NO_ANCHOR', '旧账锚点'],
+    ]
+
+    function timelineFilterMatch(entry, filter) {
+      if (filter === 'all') return true
+      if (filter === 'commit') return entry.type === 'commit'
+      if (filter === 'revert') return entry.type === 'revert'
+      if (filter === 'segment') return entry.type === 'segment'
+      if (filter === 'check') return ['verify', 'stale', 'check', 'waive', 'override'].includes(entry.type)
+      if (filter === 'plan') return ['plan', 'fork'].includes(entry.type)
+      return true
     }
 
     function FlagIcon({ size = 11 }) {
@@ -520,6 +830,55 @@ window.__ModuleLoader__.load({
         h('path', { d: 'M9 6l6 6-6 6' }))
     }
 
+    function TabIcon({ name }) {
+      const common = { width: 12, height: 12, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 }
+      if (name === 'timeline') return h('svg', common, h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 7v5l3 2' }))
+      if (name === 'health') return h('svg', common, h('path', { d: 'M4 13h4l2 5 4-12 2 7h4' }))
+      return h('svg', common, h('path', { d: 'M4 6h16M4 12h16M4 18h10' }))
+    }
+
+    function Ring({ done = 0, total = 0 }) {
+      const circumference = 2 * Math.PI * 18
+      const complete = Math.max(0, Math.min(Number(done) || 0, Number(total) || 0))
+      const ratio = total > 0 ? complete / total : 0
+      return h('div', { className: 'beat-ring', 'data-empty': total > 0 ? '0' : '1', role: 'img', 'aria-label': `${formatNumber(complete)} / ${formatNumber(total)} 个决策已拍板` }, [
+        h('svg', { key: 'svg', viewBox: '0 0 44 44', 'aria-hidden': 'true' }, [
+          h('circle', { key: 'track', className: 'track', cx: 22, cy: 22, r: 18 }),
+          h('circle', { key: 'val', className: 'val', cx: 22, cy: 22, r: 18, strokeDasharray: circumference, strokeDashoffset: circumference * (1 - ratio) }),
+        ]),
+        h('div', { className: 'ctr', key: 'ctr' }, [h('b', { key: 'done' }, formatNumber(complete)), h('span', { key: 'total' }, `/${formatNumber(total)}`)]),
+      ])
+    }
+
+    function SegBar({ chapter, decisions = null }) {
+      let states
+      if (Array.isArray(decisions) && decisions.length > 0) {
+        states = decisions.slice(0, 5).map((decision) => decision.legacy
+          ? 'legacy'
+          : (decision.status === 'committed' ? 'done' : 'open'))
+      } else {
+        const total = Math.max(0, Math.floor(Number(chapter.decisions) || 0))
+        const legacy = chapter.legacy ? Math.min(total, Math.max(1, Number(chapter.noAnchor) || 0)) : 0
+        const done = Math.max(0, (Number(chapter.committed) || 0) - legacy)
+        const open = Math.max(0, Number(chapter.open) || 0)
+        states = []
+        const append = (state, count) => {
+          for (let index = 0; index < count && states.length < 5; index += 1) states.push(state)
+        }
+        append('done', done)
+        append('open', open)
+        append('legacy', legacy)
+        while (states.length < Math.min(total, 5)) states.push('done')
+      }
+      return h('span', { className: 'beat-segbar', 'aria-hidden': 'true' }, states.slice(0, 5).map((state, index) => h('i', { key: index, className: state })))
+    }
+
+    function Seal({ state }) {
+      const legacy = state === 'legacy'
+      const open = state === 'open'
+      return h('span', { className: 'beat-seal', 'data-state': legacy ? 'legacy' : (open ? 'open' : 'committed'), 'aria-hidden': 'true' }, legacy ? '旧' : (open ? '待' : '定'))
+    }
+
     function WarningIcon({ size = 11 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2 },
         h('path', { d: 'M12 3l10 18H2L12 3z' }), h('path', { d: 'M12 9v5M12 17.5v.5' }))
@@ -533,64 +892,66 @@ window.__ModuleLoader__.load({
       const blocked = decision.revertBlockedReason
       const readOnly = on === false
       return h('div', { className: 'beat-detail', style: { '--beat-kind': kindTone(decision.kind) } }, [
-        h('div', { className: 'beat-detail-top', key: 'top' }, [
-          h('span', { key: 'k' }, `第 ${chapter} 章 · 决策 ${decision.seq}/${total}`),
-          h('span', { className: 'beat-spacer', key: 'sp' }),
-          h('span', { key: 's' }, decision.status === 'committed' ? '已拍板' : '待拍板'),
-          h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: onClose, title: '关闭详情' }, '×'),
-        ]),
-        h('div', { className: 'beat-detail-title', key: 'title' }, decision.title),
-        h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
-        h('div', { className: 'beat-cur', key: 'cur' }, [
-          h('span', { className: 'beat-cur-mark', key: 'm' }, decision.chosen ? '✓' : '·'),
-          h('div', { className: 'beat-cur-grow', key: 'g' }, [
-            h('div', { className: 'beat-cur-k', key: 'k' }, '当前选择'),
-            h('div', { className: 'beat-cur-v', key: 'v' }, chosenLabel || '还没拍板'),
+        h('span', { className: 'beat-detail-stamp', key: 'stamp', 'aria-hidden': 'true' }, [h('span', { key: 'zhu' }, '朱'), h('span', { key: 'pi' }, '批')]),
+        h('div', { className: 'beat-detail-inner', key: 'inner' }, [
+          h('div', { className: 'beat-detail-top', key: 'top' }, [
+            h('span', { key: 'k' }, `第 ${chapter} 章 · 决策 ${decision.seq}/${total} · ${decision.id}`),
+            h('span', { className: 'beat-spacer', key: 's' }),
+            h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: onClose, title: '关闭详情', 'aria-label': '关闭详情' }, '×'),
           ]),
-          h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen ? '已落账' : '待问'),
-        ]),
-        h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option) => h('div', {
-          className: 'beat-opt',
-          key: option.label,
-          'data-cur': option.label === chosenLabel ? '1' : '0',
-        }, [
-          h('span', { className: 'beat-opt-radio', key: 'r' }),
-          h('span', { className: 'beat-opt-label', key: 'l' }, [
-            h('div', { key: 'label' }, option.label),
-            option.impact ? h('div', { className: 'beat-opt-impact', key: 'impact' }, option.impact) : null,
+          h('div', { className: 'beat-detail-title', key: 'title' }, decision.title),
+          h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
+          h('div', { className: 'beat-cur', key: 'cur' }, [
+            h('span', { className: 'beat-cur-mark', key: 'm' }, decision.chosen ? '✓' : '·'),
+            h('div', { className: 'beat-cur-grow', key: 'g' }, [
+              h('div', { className: 'beat-cur-k', key: 'k' }, '当前选择'),
+              h('div', { className: 'beat-cur-v', key: 'v' }, chosenLabel || '还没拍板'),
+            ]),
+            h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen ? '已落账' : '待问'),
           ]),
-        ]))),
-        changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
-          className: 'beat-change',
-          key: `${change.entity}.${change.key}`,
-          title: `${change.entity}.${change.key} → ${change.to}`,
-        }, `${change.entity}·${change.key} → ${change.to}`))) : null,
-        h('div', { className: 'beat-seg', key: 'seg' }, decision.segment
-          ? `${decision.segment.id} · ${formatNumber(decision.segment.chars)} 字 · 第 ${formatNumber(decision.segment.offsetStart)}–${formatNumber(decision.segment.offsetEnd)} 字`
-          : '无正文锚点'),
-        revert
-          ? h('div', { className: 'beat-impact', key: 'impact' }, [
-            h(WarningIcon, { key: 'icon' }),
-            h('span', { key: 'text' }, `回到这里：作废 ${formatNumber(revert.segments)} 段（${formatNumber(revert.chars)} 字）· 撤回 ${formatNumber(revert.canonEntries)} 条设定 · 目标重落账 · 后续 ${formatNumber(later)} 个重开`),
-          ])
-          : h('div', { className: 'beat-blocked', key: 'blocked' }, blocked === 'legacy'
-            ? '0.6 旧账只记了选择，没有正文锚点；要改请直接改正文。'
-            : blocked === 'not-committed'
-              ? '这条决策还没拍板，等模型问到它再定。'
-              : '这条决策还没有登记正文段落，只能查看，不能回退正文。'),
-        h('div', { className: 'beat-detail-actions', key: 'actions' }, [
-          h('button', {
-            key: 'rewind', type: 'button', className: 'beat-btn', 'data-p': '1',
-            disabled: !decision.canRevert || busy || readOnly,
-            title: readOnly ? '先开启拍板' : (decision.canRevert ? '保留当前选择，回到这一段重写' : '没有正文锚点，不能回退'),
-            onClick: () => onRewrite?.(decision),
-          }, busy ? '处理中…' : '回到这里重写'),
-          h('button', {
-            key: 'choose', type: 'button', className: 'beat-btn',
-            disabled: !decision.canRevert || busy || readOnly,
-            title: readOnly ? '先开启拍板' : (decision.canRevert ? '选另一个走向再重写' : '没有正文锚点，不能改选'),
-            onClick: () => onChoose?.(decision),
-          }, '改选另一个走向'),
+          h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option, index) => h('div', {
+            className: 'beat-opt',
+            key: option.label,
+            'data-cur': option.label === chosenLabel ? '1' : '0',
+          }, [
+            h('span', { className: 'beat-opt-letter', key: 'letter' }, String.fromCharCode(65 + index)),
+            h('span', { className: 'beat-opt-label', key: 'l' }, [
+              h('div', { key: 'label' }, option.label),
+              option.impact ? h('div', { className: 'beat-opt-impact', key: 'impact' }, option.impact) : null,
+            ]),
+          ]))),
+          changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
+            className: 'beat-change',
+            key: `${change.entity}.${change.key}`,
+            title: `${change.entity}.${change.key} → ${change.to}`,
+          }, `${change.entity}·${change.key} → ${change.to}`))) : null,
+          h('div', { className: 'beat-seg', key: 'seg' }, decision.segment
+            ? `${decision.segment.id} · ${formatNumber(decision.segment.chars)} 字 · 第 ${formatNumber(decision.segment.offsetStart)}–${formatNumber(decision.segment.offsetEnd)} 字`
+            : '无正文锚点'),
+          revert
+            ? h('div', { className: 'beat-impact', key: 'impact' }, [
+              h(WarningIcon, { key: 'icon' }),
+              h('span', { key: 'text' }, `回到这里：作废 ${formatNumber(revert.segments)} 段（${formatNumber(revert.chars)} 字）· 撤回 ${formatNumber(revert.canonEntries)} 条设定 · 目标重落账 · 后续 ${formatNumber(later)} 个重开`),
+            ])
+            : h('div', { className: 'beat-blocked', key: 'blocked' }, blocked === 'legacy'
+              ? '0.6 旧账只记了选择，没有正文锚点；要改请直接改正文。'
+              : blocked === 'not-committed'
+                ? '这条决策还没拍板，等模型问到它再定。'
+                : '这条决策还没有登记正文段落，只能查看，不能回退正文。'),
+          h('div', { className: 'beat-detail-actions', key: 'actions' }, [
+            h('button', {
+              key: 'rewind', type: 'button', className: 'beat-btn', 'data-p': '1',
+              disabled: !decision.canRevert || busy || readOnly,
+              title: readOnly ? '先开启拍板' : (decision.canRevert ? '保留当前选择，回到这一段重写' : '没有正文锚点，不能回退'),
+              onClick: () => onRewrite?.(decision),
+            }, busy ? '处理中…' : '回到这里重写'),
+            h('button', {
+              key: 'choose', type: 'button', className: 'beat-btn',
+              disabled: !decision.canRevert || busy || readOnly,
+              title: readOnly ? '先开启拍板' : (decision.canRevert ? '选另一个走向再重写' : '没有正文锚点，不能改选'),
+              onClick: () => onChoose?.(decision),
+            }, '改选另一个走向'),
+          ]),
         ]),
       ])
     }
@@ -743,6 +1104,15 @@ window.__ModuleLoader__.load({
       const [sheet, setSheet] = React.useState(null)
       const [notice, setNotice] = React.useState(null)
       const [oldLine, setOldLine] = React.useState(null)
+      const [activeTab, setActiveTab] = React.useState('map')
+      const [timeline, setTimeline] = React.useState({ phase: 'idle', data: null, error: null })
+      const [health, setHealth] = React.useState({ phase: 'idle', data: null, error: null })
+      const [tlFilter, setTlFilter] = React.useState('all')
+      const [healthChapter, setHealthChapter] = React.useState(null)
+      const [search, setSearch] = React.useState({ phase: 'idle', q: '', data: null, error: null })
+      const [searchQ, setSearchQ] = React.useState('')
+      const searchTimer = React.useRef(null)
+      const searchSeq = React.useRef(0)
       const seq = React.useRef(0)
       const chapterSeq = React.useRef(0)
 
@@ -779,6 +1149,99 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const loadTimeline = async (force = false) => {
+        if (!sid || !remote || typeof remote.timeline !== 'function') {
+          setTimeline({ phase: 'error', data: null, error: 'remote 未就绪：请重载后端。' })
+          return
+        }
+        if (!force && timeline.phase !== 'idle' && timeline.phase !== 'error') return
+        setTimeline((prev) => ({ phase: 'loading', data: prev.data, error: null }))
+        try {
+          const value = unwrap(await remote.timeline(sid, { limit: 60 }))
+          if (value?.ok === false) throw new Error(value.message ?? value.code ?? '时间线读取失败')
+          setTimeline({ phase: 'ready', data: value, error: null })
+        } catch (error) {
+          setTimeline({ phase: 'error', data: null, error: String(error?.message ?? error) })
+        }
+      }
+
+      const loadHealth = async (chapter, force = false) => {
+        if (!sid || !remote || typeof remote.health !== 'function') {
+          setHealth({ phase: 'error', data: null, error: 'remote 未就绪：请重载后端。' })
+          return
+        }
+        const target = Number.isInteger(chapter) ? chapter : (healthChapter ?? open ?? view.data?.currentChapter ?? null)
+        if (target == null) {
+          setHealth({ phase: 'ready', data: { ok: true, book: view.data?.book ?? null, chapter: null, level: 'ok', issues: [], counts: { block: 0, warn: 0, info: 0 }, textAvailable: false }, error: null })
+          return
+        }
+        if (!force && health.phase === 'ready' && health.data?.chapter === target) return
+        setHealth((prev) => ({ phase: 'loading', data: prev.data, error: null }))
+        try {
+          const value = unwrap(await remote.health(sid, { chapter: target }))
+          if (value?.ok === false) throw new Error(value.message ?? value.code ?? '体检读取失败')
+          setHealthChapter(target)
+          setHealth({ phase: 'ready', data: value, error: null })
+        } catch (error) {
+          setHealth({ phase: 'error', data: null, error: String(error?.message ?? error) })
+        }
+      }
+
+      const runSearch = async (value, immediate = false) => {
+        const q = String(value ?? '')
+        setSearchQ(q)
+        if (searchTimer.current) clearTimeout(searchTimer.current)
+        const query = q.trim()
+        if (!query) {
+          setSearch({ phase: 'idle', q: '', data: null, error: null })
+          return
+        }
+        const fire = async () => {
+          if (!sid || !remote || typeof remote.search !== 'function') {
+            setSearch({ phase: 'error', q: query, data: null, error: 'remote 未就绪：请重载后端。' })
+            return
+          }
+          const my = ++searchSeq.current
+          setSearch({ phase: 'loading', q: query, data: null, error: null })
+          try {
+            const data = unwrap(await remote.search(sid, { q: query, limit: 20 }))
+            if (my !== searchSeq.current) return
+            if (data?.ok === false) throw new Error(data.message ?? data.code ?? '搜索失败')
+            setSearch({ phase: 'ready', q: query, data, error: null })
+          } catch (error) {
+            if (my !== searchSeq.current) return
+            setSearch({ phase: 'error', q: query, data: null, error: String(error?.message ?? error) })
+          }
+        }
+        if (immediate) {
+          await fire()
+        } else {
+          searchTimer.current = setTimeout(fire, 250)
+        }
+      }
+
+      const clearSearch = () => {
+        if (searchTimer.current) clearTimeout(searchTimer.current)
+        searchSeq.current += 1
+        setSearchQ('')
+        setSearch({ phase: 'idle', q: '', data: null, error: null })
+      }
+
+      const switchTab = (tab) => {
+        setActiveTab(tab)
+        if (tab === 'timeline') loadTimeline()
+        if (tab === 'health') loadHealth(open ?? view.data?.currentChapter ?? null)
+      }
+
+      const refreshAll = async () => {
+        setTimeline({ phase: 'idle', data: null, error: null })
+        setHealth({ phase: 'idle', data: null, error: null })
+        clearSearch()
+        await load()
+        if (activeTab === 'timeline') loadTimeline(true)
+        if (activeTab === 'health') loadHealth(healthChapter ?? open ?? view.data?.currentChapter ?? null, true)
+      }
+
       React.useEffect(() => {
         setChapters({})
         setOpen(null)
@@ -786,6 +1249,13 @@ window.__ModuleLoader__.load({
         setSheet(null)
         setNotice(null)
         setOldLine(null)
+        setTimeline({ phase: 'idle', data: null, error: null })
+        setHealth({ phase: 'idle', data: null, error: null })
+        setTlFilter('all')
+        setHealthChapter(null)
+        setSearch({ phase: 'idle', q: '', data: null, error: null })
+        setSearchQ('')
+        if (searchTimer.current) clearTimeout(searchTimer.current)
         load()
         return () => { seq.current += 1; chapterSeq.current += 1 }
       }, [sid])
@@ -843,6 +1313,7 @@ window.__ModuleLoader__.load({
             snapshot: sheet.snapshot !== false,
             markLaterStale: sheet.markLaterStale === true,
             expectedBookUpdatedAt: view.data?.bookUpdatedAt ?? null,
+          expectedRevision: view.data?.revision ?? null,
           }))
           setSheet(null)
           setSelected(null)
@@ -919,25 +1390,39 @@ window.__ModuleLoader__.load({
       })
 
       const header = h('div', { className: 'beat-head', key: 'head' }, [
-        h('div', { className: 'beat-top', key: 'top' }, [
-          h('span', { className: 'beat-tab', key: 'tab' }, [h(FlagIcon, { key: 'f' }), '拍板台']),
+        h('div', { className: 'beat-top beat-eyebrow', key: 'top' }, [
+          h('span', { key: 'label' }, '拍板台 · DECISION LEDGER'),
           h('span', { className: 'beat-spacer', key: 's' }),
           h('button', {
             key: 'refresh', type: 'button', className: 'beat-icon', title: '刷新账本',
-            onClick: () => load(), 'aria-label': '刷新账本',
+            onClick: () => refreshAll(), 'aria-label': '刷新账本',
           }, h(RefreshIcon)),
         ]),
-        h('div', { className: 'beat-book', key: 'book' }, data?.book ?? '还没有拍板账本'),
-        h('div', { className: 'beat-sub', key: 'sub' }, [
-          h('span', { className: 'beat-mode', 'data-on': data?.on ? '1' : '0', key: 'mode' }, [h('i', { key: 'dot' }), `拍板：${data?.on ? '开' : '关'}`]),
-          h('span', { key: 'dot' }, '·'),
-          h('span', { key: 'updated' }, data?.bookUpdatedAt ? `更新于 ${formatTime(data.bookUpdatedAt)}` : '本地账本'),
+        h('div', { className: 'beat-eyes', key: 'eyes' }, [
+          h('div', { className: 'beat-chap-grow', key: 'grow' }, [
+            h('div', { className: 'beat-book', key: 'book' }, data?.book ?? '还没有拍板账本'),
+            h('div', { className: 'beat-sub', key: 'sub' }, [
+              h('span', { className: 'beat-mode', 'data-on': data?.on ? '1' : '0', key: 'mode' }, [h('i', { key: 'dot' }), `拍板：${data?.on ? '开' : '关'}`]),
+              h('span', { className: 'beat-dotsep', key: 'dot1' }),
+              h('span', { key: 'updated' }, data?.bookUpdatedAt ? `更新 ${formatTime(data.bookUpdatedAt)}` : '本地账本'),
+              h('span', { className: 'beat-dotsep', key: 'dot2' }),
+              data?.currentChapter
+                ? h('span', { key: 'current' }, ['第 ', h('b', { key: 'num' }, formatNumber(data.currentChapter)), ' 章在写'])
+                : h('span', { key: 'current' }, '暂无在写章节'),
+            ]),
+          ]),
+          h(Ring, { key: 'ring', done: stats.committed, total: stats.decisions }),
         ]),
         h('div', { className: 'beat-stats', key: 'stats' }, [
-          h('div', { className: 'beat-stat', key: 'ch', style: { '--beat-tone': 'var(--beat-brand)' } }, [h('b', { key: 'b' }, formatNumber(stats.chapters)), h('span', { key: 's' }, '章')]),
-          h('div', { className: 'beat-stat', key: 'de', style: { '--beat-tone': 'var(--beat-brand-2)' } }, [h('b', { key: 'b' }, formatNumber(stats.decisions)), h('span', { key: 's' }, '决策')]),
-          h('div', { className: 'beat-stat', key: 'se', style: { '--beat-tone': 'var(--beat-ok)' } }, [h('b', { key: 'b' }, formatNumber(stats.segments)), h('span', { key: 's' }, '已落段落')]),
-          h('div', { className: 'beat-stat', key: 'chars', style: { '--beat-tone': 'var(--beat-warn)' } }, [h('b', { key: 'b' }, formatNumber(stats.chars)), h('span', { key: 's' }, '正文字数')]),
+          h('div', { className: 'beat-stat', key: 'ch' }, [h('b', { key: 'b' }, formatNumber(stats.chapters)), h('span', { key: 's' }, '章')]),
+          h('div', { className: 'beat-stat', key: 'de' }, [h('b', { key: 'b' }, formatNumber(stats.decisions)), h('span', { key: 's' }, '决策')]),
+          h('div', { className: 'beat-stat t-jade', key: 'se' }, [h('b', { key: 'b' }, formatNumber(stats.segments)), h('span', { key: 's' }, '段落')]),
+          h('div', { className: 'beat-stat t-amber', key: 'chars' }, [h('b', { key: 'b' }, formatNumber(stats.chars)), h('span', { key: 's' }, '字')]),
+        ]),
+        h('div', { className: 'beat-tabs', key: 'tabs', role: 'tablist', 'aria-label': '账本视图' }, [
+          h('button', { key: 'map', type: 'button', className: 'beat-tab', 'data-a': activeTab === 'map' ? '1' : '0', role: 'tab', 'aria-selected': activeTab === 'map', onClick: () => switchTab('map') }, [h(TabIcon, { key: 'icon', name: 'map' }), '决策地图']),
+          h('button', { key: 'timeline', type: 'button', className: 'beat-tab', 'data-a': activeTab === 'timeline' ? '1' : '0', role: 'tab', 'aria-selected': activeTab === 'timeline', onClick: () => switchTab('timeline') }, [h(TabIcon, { key: 'icon', name: 'timeline' }), '时间线', h('b', { key: 'count' }, formatNumber(timeline.data?.total ?? stats.decisions))]),
+          h('button', { key: 'health', type: 'button', className: 'beat-tab', 'data-a': activeTab === 'health' ? '1' : '0', role: 'tab', 'aria-selected': activeTab === 'health', onClick: () => switchTab('health') }, [h(TabIcon, { key: 'icon', name: 'health' }), '体检', health.phase === 'ready' && health.data?.counts ? (health.data.counts.block + health.data.counts.warn > 0 ? h('b', { key: 'count', className: 'beat-tab-warn' }, `${health.data.counts.block + health.data.counts.warn}`) : null) : null]),
         ]),
       ])
 
@@ -954,6 +1439,52 @@ window.__ModuleLoader__.load({
           h('b', { key: 't' }, '这本书还没有拍板账本'),
           h('div', { key: 's' }, '开启拍板后，AI 遇到会改变走向的岔路会先来问你；决策会记在这里。'),
         ])
+      } else if (searchQ.trim()) {
+        const result = search.data
+        const hits = result?.hits ?? []
+        const jumpTo = (hit) => {
+          if (!Number.isInteger(hit.chapter)) return
+          setActiveTab('map')
+          setOpen(hit.chapter)
+          setSelected(hit.kind === 'decision' ? hit.id : null)
+          clearSearch()
+        }
+        if (search.phase === 'loading' || (!result && search.phase !== 'error')) {
+          body = h('div', { className: 'beat-list', key: 'search-loading' }, [0, 1, 2].map((index) => h('div', { className: 'beat-skel', key: index })))
+        } else if (search.phase === 'error') {
+          body = h('div', { className: 'beat-error', key: 'search-error' }, [
+            h('div', { key: 'm' }, `搜索失败：${search.error}`),
+            h('button', { key: 'r', type: 'button', onClick: () => runSearch(searchQ, true) }, '重试'),
+          ])
+        } else if (hits.length === 0) {
+          body = h('div', { className: 'beat-empty', key: 'search-empty' }, [
+            h('b', { key: 't' }, `没有找到「${result?.q ?? searchQ}」`),
+            h('div', { key: 's' }, '试试人物名（陈凡）或设定名（对东宫的态度）。'),
+          ])
+        } else {
+          body = h('div', { className: 'beat-search-results', key: 'search-results' }, [
+            h('div', { className: 'beat-search-head', key: 'head' }, `找到 ${formatNumber(result?.total ?? hits.length)} 条 · ${result?.q ?? searchQ}`),
+            ...hits.map((hit) => h('div', {
+              className: 'beat-sr', key: `${hit.kind}:${hit.id}`, 'data-kind': hit.kind,
+              role: 'button', tabIndex: 0,
+              onClick: () => jumpTo(hit),
+              onKeyDown: (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') return
+                event.preventDefault()
+                jumpTo(hit)
+              },
+            }, [
+              h('div', { className: 'beat-sr-top', key: 'top' }, [
+                h('span', { className: 'beat-sr-kind', key: 'kind' }, hit.kind === 'decision' ? '决策' : (hit.kind === 'canon' ? '设定' : '义务')),
+                hit.chapter ? h('span', { key: 'ch' }, `第 ${hit.chapter} 章`) : null,
+                h('span', { className: 'beat-sr-id', key: 'id' }, hit.id),
+              ]),
+              h('div', { className: 'beat-sr-title', key: 'title' }, hit.title ?? hit.id),
+              hit.choice ? h('div', { className: 'beat-sr-choice', key: 'choice' }, `→ ${hit.choice}`) : null,
+              h('div', { className: 'beat-sr-snippet', key: 'snippet' }, hit.snippet ?? ''),
+            ])),
+          ])
+        }
       } else if (filtered.length === 0) {
         body = h('div', { className: 'beat-empty', key: 'empty-filter' }, [
           h('b', { key: 't' }, '没有符合条件的章节'),
@@ -978,19 +1509,20 @@ window.__ModuleLoader__.load({
               : chapter.legacy && chapter.noAnchor > 0
                 ? 'legacy'
                 : 'done'
+          const chapterDecisions = chapterState?.phase === 'ready' ? chapterState.data?.decisions : null
           rows.push(h('button', {
             key: `ch-${chapter.chapter}`,
             type: 'button',
             className: 'beat-chap',
             'data-open': isOpen ? '1' : '0',
             'data-tone': tone,
+            'data-current': chapter.chapter === data?.currentChapter ? '1' : '0',
             onClick: () => toggle(chapter.chapter),
             'aria-expanded': isOpen,
           }, [
-            h('span', { className: 'beat-chap-dot', key: 'dot' }),
+            h('span', { className: 'beat-chap-no', key: 'no' }, String(chapter.chapter).padStart(2, '0')),
             h('span', { className: 'beat-chap-grow', key: 'grow' }, [
               h('span', { className: 'beat-chap-line', key: 'line' }, [
-                h('span', { className: 'beat-chap-no', key: 'no' }, `第 ${chapter.chapter} 章`),
                 h('span', { className: 'beat-chap-name', key: 'name' }, chapter.title ?? `第 ${chapter.chapter} 章`),
               ]),
               h('span', { className: 'beat-chap-meta', key: 'meta' }, [
@@ -999,11 +1531,11 @@ window.__ModuleLoader__.load({
                 h('span', { key: 's' }, [h('b', { key: 'b2' }, formatNumber(chapter.segments)), ' 段']),
                 h('span', { key: 'dot3' }, '·'),
                 h('span', { key: 'c' }, [h('b', { key: 'b3' }, formatNumber(chapter.chars)), ' 字']),
-                chapter.noAnchor > 0 ? h('span', { key: 'na', style: { color: 'var(--beat-warn)' } }, `· 无锚点 ${chapter.noAnchor}`) : null,
               ]),
+              h(SegBar, { key: 'segments', chapter, decisions: chapterDecisions }),
             ]),
             h('span', { className: 'beat-chap-right', key: 'right' }, [
-              h('span', { className: `beat-badge ${badge.className}`, key: 'badge' }, badge.text),
+              h('span', { className: `beat-badge beat-chap-state ${badge.className}`, key: 'badge' }, badge.text),
               h(ChevronIcon, { key: 'chev' }),
             ]),
           ]))
@@ -1030,12 +1562,14 @@ window.__ModuleLoader__.load({
             ? [h('div', { className: 'beat-empty', key: 'empty', style: { padding: '14px 8px' } }, '这一章没有决策点')]
             : decisions.map((decision) => {
               const active = selected === decision.id
+              const decisionState = decision.legacy ? 'legacy' : (decision.status === 'committed' ? 'committed' : 'open')
+              const decisionStatus = decision.legacy ? '旧账' : (decision.status === 'committed' ? '已拍板' : '待拍板')
               return h('div', { className: 'beat-dec-block', key: decision.id }, [
                 h('div', {
                   className: 'beat-dec',
                   key: 'row',
                   'data-a': active ? '1' : '0',
-                  'data-state': decision.status === 'committed' ? 'committed' : (decision.canRevert || decision.status !== 'committed' ? 'open' : 'committed'),
+                  'data-state': decisionState,
                   role: 'button',
                   tabIndex: 0,
                   onClick: () => setSelected(active ? null : decision.id),
@@ -1045,6 +1579,7 @@ window.__ModuleLoader__.load({
                     setSelected(active ? null : decision.id)
                   },
                 }, [
+                  h(Seal, { key: 'seal', state: decisionState }),
                   h('div', { className: 'beat-dec-grow', key: 'grow' }, [
                     h('div', { className: 'beat-dec-title', key: 'title' }, decision.title),
                     h('div', {
@@ -1067,7 +1602,8 @@ window.__ModuleLoader__.load({
                     ]),
                   ]),
                   h('div', { className: 'beat-dec-right', key: 'right' }, [
-                    h('span', { className: 'beat-dec-badge', key: 'badge' }, decision.status === 'committed' ? '已拍板' : (decision.canRevert ? '待拍板' : '只能看')),
+                    h('span', { className: 'beat-dec-badge', key: 'badge' }, decisionStatus),
+                    h(ChevronIcon, { key: 'chev' }),
                   ]),
                 ]),
                 active ? h(BeatDecisionDetail, {
@@ -1086,56 +1622,189 @@ window.__ModuleLoader__.load({
         }
         body = h('div', { className: 'beat-list', key: 'list' }, rows)
       }
+      if (activeTab === 'timeline') {
+        const tl = timeline.data
+        if (timeline.phase === 'loading' && !tl) {
+          body = h('div', { className: 'beat-list', key: 'tl-loading' }, [0, 1, 2, 3].map((index) => h('div', { className: 'beat-skel', key: index })))
+        } else if (timeline.phase === 'error') {
+          body = h('div', { className: 'beat-error', key: 'tl-error' }, [
+            h('div', { key: 'm' }, `时间线读取失败：${timeline.error}`),
+            h('button', { key: 'r', type: 'button', onClick: () => loadTimeline(true) }, '重试'),
+          ])
+        } else if (!tl || tl.ok === false) {
+          body = h('div', { className: 'beat-empty', key: 'tl-empty' }, [
+            h('b', { key: 't' }, '时间线'),
+            h('div', { key: 's' }, tl?.message ?? '还没有可回看的历史。'),
+          ])
+        } else {
+          const shown = (tl.entries ?? []).filter((entry) => timelineFilterMatch(entry, tlFilter))
+          const days = new Map()
+          for (const entry of shown) {
+            const key = formatDay(entry.at)
+            if (!days.has(key)) days.set(key, [])
+            days.get(key).push(entry)
+          }
+          const chips = [
+            ['all', '全部', tl.total],
+            ['commit', '拍板', tl.counts?.commit ?? 0],
+            ['revert', '回退', tl.counts?.revert ?? 0],
+            ['segment', '登记', tl.counts?.segment ?? 0],
+            ['plan', '岔路', (tl.counts?.plan ?? 0) + (tl.counts?.fork ?? 0)],
+            ['check', '体检', (tl.counts?.verify ?? 0) + (tl.counts?.stale ?? 0) + (tl.counts?.check ?? 0) + (tl.counts?.waive ?? 0) + (tl.counts?.override ?? 0)],
+          ]
+          body = h('div', { className: 'beat-tl', key: 'timeline', role: 'tabpanel' }, [
+            h('div', { className: 'beat-filters beat-tl-filters', key: 'filters' }, chips.map(([id, label, count]) => h('button', {
+              key: id, type: 'button', className: 'beat-chip', 'data-a': tlFilter === id ? '1' : '0',
+              onClick: () => setTlFilter(id),
+            }, [h('span', { key: 'l' }, label), h('b', { key: 'c' }, formatNumber(count))]))),
+            shown.length === 0
+              ? h('div', { className: 'beat-empty', key: 'empty' }, [
+                h('b', { key: 't' }, '这个筛选下没有记录'),
+                h('div', { key: 's' }, '换一个筛选，或回到决策地图。'),
+              ])
+              : h('div', { className: 'beat-tl-list', key: 'list' }, [...days.entries()].map(([day, list]) => h('div', { className: 'beat-tl-day', key: day }, [
+                h('div', { className: 'beat-tl-day-title', key: 'title' }, day),
+                ...list.map((entry) => {
+                  const jumpable = Number.isInteger(entry.chapter)
+                  const onJump = () => {
+                    if (!jumpable) return
+                    setActiveTab('map')
+                    setOpen(entry.chapter)
+                    setSelected(entry.decisionId ?? null)
+                  }
+                  const meta = []
+                  if (entry.chapter) meta.push(`第 ${entry.chapter} 章`)
+                  if (entry.decisionId) meta.push(entry.decisionId)
+                  if (entry.chars) meta.push(`${formatNumber(entry.chars)} 字`)
+                  if (entry.revisionId) meta.push(entry.revisionId)
+                  return h('div', {
+                    className: 'beat-tl-entry', key: entry.eventId, 'data-type': entry.type,
+                    role: jumpable ? 'button' : undefined,
+                    tabIndex: jumpable ? 0 : undefined,
+                    onClick: onJump,
+                    onKeyDown: jumpable ? (event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') return
+                      event.preventDefault()
+                      onJump()
+                    } : undefined,
+                  }, [
+                    h('span', { className: 'beat-tl-node', key: 'node' }),
+                    h('div', { className: 'beat-tl-body', key: 'body' }, [
+                      h('div', { className: 'beat-tl-top', key: 'top' }, [
+                        h('span', { className: 'beat-tl-time', key: 'time' }, formatClock(entry.at)),
+                        h('span', { className: 'beat-kind beat-tl-kind', key: 'kind' }, TIMELINE_LABELS[entry.type] ?? entry.type),
+                        entry.chapter ? h('span', { className: 'beat-tl-ch', key: 'ch' }, `第 ${entry.chapter} 章`) : null,
+                      ]),
+                      h('div', { className: 'beat-tl-summary', key: 'summary' }, entry.summary ?? ''),
+                      meta.length > 0 ? h('div', { className: 'beat-tl-meta', key: 'meta' }, meta.join(' · ')) : null,
+                      entry.type === 'revert' && entry.canOpenOldLine && entry.oldLineDecisionId
+                        ? h('button', {
+                          className: 'beat-tl-link', key: 'old', type: 'button',
+                          onClick: (event) => { event.stopPropagation(); openOldLine(entry.oldLineDecisionId) },
+                        }, '查看旧线')
+                        : null,
+                    ]),
+                  ])
+                }),
+              ]))),
+            h('div', { className: 'beat-tl-foot', key: 'foot' }, `共 ${formatNumber(tl.total ?? shown.length)} 条 · 当前 ${formatNumber(shown.length)} 条`),
+          ])
+        }
+      }
+
+      if (activeTab === 'health') {
+        const hl = health.data
+        const chapter = hl?.chapter ?? healthChapter ?? open ?? data?.currentChapter ?? null
+        const counts = hl?.counts ?? { block: 0, warn: 0, info: 0 }
+        const level = hl?.level ?? 'ok'
+        if (health.phase === 'loading' && !hl) {
+          body = h('div', { className: 'beat-list', key: 'hl-loading' }, [0, 1, 2].map((index) => h('div', { className: 'beat-skel', key: index })))
+        } else if (health.phase === 'error') {
+          body = h('div', { className: 'beat-error', key: 'hl-error' }, [
+            h('div', { key: 'm' }, `体检读取失败：${health.error}`),
+            h('button', { key: 'r', type: 'button', onClick: () => loadHealth(chapter, true) }, '重试'),
+          ])
+        } else if (!hl) {
+          body = h('div', { className: 'beat-empty', key: 'hl-empty' }, [
+            h('b', { key: 't' }, '体检'),
+            h('div', { key: 's' }, '还没有可体检的章节。'),
+          ])
+        } else {
+          const chapterOptions = allChapters.map((entry) => h('option', { key: entry.chapter, value: String(entry.chapter) }, `第 ${entry.chapter} 章${entry.title ? ` ${entry.title}` : ''}`))
+          body = h('div', { className: 'beat-hl', key: 'health', role: 'tabpanel' }, [
+            h('div', { className: 'beat-hl-head', key: 'head' }, [
+              h('div', { className: 'beat-hl-title', key: 'title' }, chapter ? `第 ${chapter} 章` : '全书体检'),
+              h('div', { className: 'beat-hl-chapter', key: 'chapter' }, hl.textAvailable === false ? '正文不可读' : '只读检查 · 不改账本'),
+              h('span', { className: 'beat-spacer', key: 'sp' }),
+              chapterOptions.length > 0 ? h('select', {
+                className: 'beat-hl-select', key: 'select', value: String(chapter ?? ''),
+                onChange: (event) => { const next = Number(event.target.value); if (Number.isInteger(next)) loadHealth(next, true) },
+                'aria-label': '选择要体检的章节',
+              }, chapterOptions) : null,
+            ]),
+            h('div', { className: 'beat-hl-summary', key: 'summary', 'data-level': level }, [
+              h('div', { className: 'beat-hl-stat', key: 'b' }, [h('b', { key: 'n' }, formatNumber(counts.block)), h('span', { key: 's' }, '阻断')]),
+              h('div', { className: 'beat-hl-stat', key: 'w' }, [h('b', { key: 'n' }, formatNumber(counts.warn)), h('span', { key: 's' }, '提醒')]),
+              h('div', { className: 'beat-hl-stat', key: 'i' }, [h('b', { key: 'n' }, formatNumber(counts.info)), h('span', { key: 's' }, '提示')]),
+              h('div', { className: 'beat-hl-level', key: 'l' }, level === 'block' ? '需要处理' : level === 'warn' ? '建议看一眼' : '这一章很干净'),
+            ]),
+            h('div', { className: 'beat-hl-checks', key: 'checks' }, HEALTH_CHECKS.map(([code, label]) => {
+              const issue = (hl.issues ?? []).find((entry) => entry.code === code)
+              return h('div', { className: 'beat-hl-check', key: code, 'data-sev': issue?.severity ?? 'ok' }, [
+                h('span', { className: 'beat-hl-check-dot', key: 'dot' }),
+                h('span', { className: 'beat-hl-check-l', key: 'l' }, label),
+                h('span', { className: 'beat-hl-check-n', key: 'n' }, issue ? formatNumber(issue.count) : '通过'),
+              ])
+            })),
+            chapterOptions.length === 0 ? h('div', { className: 'beat-empty', key: 'empty' }, '还没有章节可以体检。') : null,
+            (hl.issues ?? []).length === 0
+              ? h('div', { className: 'beat-hl-ok', key: 'ok' }, [h('span', { className: 'beat-hl-ok-mark', key: 'm' }, '✓'), h('div', { key: 't' }, [h('b', { key: 'b' }, '没有发现结构问题'), h('span', { key: 's' }, '这一章可以继续往下写。')])])
+              : h('div', { className: 'beat-hl-issues', key: 'issues' }, (hl.issues ?? []).map((issue) => h('div', { className: 'beat-hl-issue', key: issue.code, 'data-sev': issue.severity }, [
+                h('div', { className: 'beat-hl-issue-top', key: 'top' }, [
+                  h('span', { className: 'beat-hl-code', key: 'code' }, issue.code),
+                  h('span', { className: 'beat-hl-count', key: 'count' }, `${formatNumber(issue.count)} 条`),
+                ]),
+                ...(issue.items ?? []).slice(0, 3).map((item) => h('div', { className: 'beat-hl-item', key: item.id }, [
+                  h('div', { className: 'beat-hl-item-t', key: 't' }, item.title ?? item.id),
+                  h('div', { className: 'beat-hl-item-d', key: 'd' }, item.detail ?? ''),
+                ])),
+                h('button', {
+                  className: 'beat-hl-action', key: 'action', type: 'button',
+                  onClick: () => {
+                    setActiveTab('map')
+                    if (chapter) setOpen(chapter)
+                    const first = (issue.items ?? [])[0]?.id
+                    if (typeof first === 'string' && first.startsWith('b')) setSelected(first)
+                  },
+                }, `${issue.action ?? '去处理'} →`),
+              ]))),
+            hl.textAvailable === false ? h('div', { className: 'beat-hl-note', key: 'note' }, '本章正文不可读，已跳过漂移与未登记区间检查。') : null,
+            h('div', { className: 'beat-hl-foot', key: 'foot' }, '体检只读：不写账本、不改正文。'),
+          ])
+        }
+      }
+
 
       return h('div', {
         className: 'beat-root',
-        style: {
-          // DSH 的主题只有 --dsw-alias-* 这一族真实存在（label / border-l* /
-          // state-* / bg-*）。旧代码写的 --dsw-alias-text-primary 之类并不存在，
-          // 于是浅色主题下全部落到深色写死的兜底值 → 白底浅灰字。
-          '--beat-text': 'var(--dsw-alias-label-primary, inherit)',
-          '--beat-muted': 'var(--dsw-alias-label-secondary, inherit)',
-          '--beat-faint': 'var(--dsw-alias-label-tertiary, inherit)',
-          // 分隔线跟随正文色，浅色主题是 13% 的黑，深色主题是 13% 的白。
-          '--beat-line': 'color-mix(in srgb, var(--dsw-alias-label-primary, #808080) 13%, transparent)',
-          // 品牌色是插件自己的蓝，深浅主题都亮；文字另算 ink 版，混回正文色。
-          '--beat-brand': '#4c6ef5',
-          '--beat-brand-ink': 'color-mix(in srgb, var(--beat-brand) 68%, var(--beat-text))',
-          '--beat-brand-2': '#a78bfa',
-          '--beat-brand-3': '#38bdf8',
-          '--beat-pink': '#f472b6',
-          '--beat-orange': '#f59e0b',
-          '--beat-cyan': '#22d3ee',
-          '--beat-grad': 'linear-gradient(135deg, #7d95fb 0%, #a78bfa 58%, #38bdf8 100%)',
-          '--beat-on-accent': '#ffffff',
-          '--beat-brand-soft': 'color-mix(in srgb, var(--beat-brand) 12%, transparent)',
-          '--beat-brand-line': 'color-mix(in srgb, var(--beat-brand) 34%, transparent)',
-          // 状态色用宿主的 state-*（浅深同值，中调）。填充/圆点直接用它，
-          // 小字用 ink 版：浅色主题往正文色里压暗，深色主题往亮里提。
-          '--beat-ok': 'var(--dsw-alias-state-success-primary, #22c55e)',
-          '--beat-ok-ink': 'color-mix(in srgb, var(--beat-ok) 52%, var(--beat-text))',
-          '--beat-ok-soft': 'color-mix(in srgb, var(--beat-ok) 12%, transparent)',
-          '--beat-ok-line': 'color-mix(in srgb, var(--beat-ok) 38%, transparent)',
-          '--beat-warn': 'var(--dsw-alias-state-warn-primary, #f59e0b)',
-          '--beat-warn-ink': 'color-mix(in srgb, var(--beat-warn) 50%, var(--beat-text))',
-          '--beat-warn-soft': 'color-mix(in srgb, var(--beat-warn) 14%, transparent)',
-          '--beat-warn-line': 'color-mix(in srgb, var(--beat-warn) 40%, transparent)',
-          '--beat-danger': 'var(--dsw-alias-state-error-primary, #ec1313)',
-          '--beat-danger-ink': 'color-mix(in srgb, var(--beat-danger) 72%, var(--beat-text))',
-          '--beat-danger-soft': 'color-mix(in srgb, var(--beat-danger) 10%, transparent)',
-          '--beat-danger-line': 'color-mix(in srgb, var(--beat-danger) 32%, transparent)',
-          // 抬升层不跟 bg-layer-* 走：浅色主题里 bg-layer-1 就是纯白，看起来没层次。
-          '--beat-layer1': 'color-mix(in srgb, var(--dsw-alias-label-primary, #808080) 5%, transparent)',
-          '--beat-layer2': 'color-mix(in srgb, var(--dsw-alias-label-primary, #808080) 9%, transparent)',
-          '--beat-mono': 'ui-monospace, "Cascadia Code", Consolas, monospace',
-          '--beat-page': 'var(--dsw-alias-bg-base, #111214)',
-          '--beat-sheet-bg': 'var(--dsw-alias-bg-overlay, var(--dsw-alias-bg-base, #141619))',
-          '--beat-tone': 'var(--beat-brand)',
-          '--beat-tone-text': 'color-mix(in srgb, var(--beat-tone) 58%, var(--beat-text))',
-        },
       }, [
         h('style', { key: 'css' }, BEAT_PANEL_CSS),
         header,
+        activeTab === 'map' ? h('div', { className: 'beat-search', key: 'search' }, [
+          h('svg', { className: 'beat-search-ico', key: 'icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': 'true' },
+            h('circle', { cx: 11, cy: 11, r: 6 }), h('path', { d: 'M16 16l4 4' })),
+          h('input', {
+            className: 'beat-search-input', key: 'input', type: 'search', value: searchQ,
+            placeholder: '搜决策、设定、义务…', spellCheck: false,
+            'aria-label': '搜索决策、设定、义务',
+            onChange: (event) => runSearch(event.target.value),
+            onKeyDown: (event) => {
+              if (event.key === 'Enter') { event.preventDefault(); runSearch(searchQ, true) }
+              if (event.key === 'Escape') { event.preventDefault(); clearSearch() }
+            },
+          }),
+          searchQ ? h('button', { className: 'beat-search-clear', key: 'clear', type: 'button', onClick: clearSearch, 'aria-label': '清除搜索' }, '×') : null,
+        ]) : null,
         notice ? h('div', { className: 'beat-notice', key: 'notice' }, [
           h('span', { key: 't' }, notice.text),
           h('span', { className: 'beat-spacer', key: 'sp' }),
@@ -1152,23 +1821,26 @@ window.__ModuleLoader__.load({
           notice.resumeError ? h('div', { className: 'beat-notice-err', key: 'err' }, notice.resumeError) : null,
         ]) : null,
         data && !data.on ? h('div', { className: 'beat-banner', key: 'banner' }, '拍板：关 · 只能查看，不能回退或改选') : null,
-        h('div', { className: 'beat-filters', key: 'filters' }, [
-          ['all', '全部', stats.decisions],
-          ['open', '待拍板', stats.open],
-          ['committed', '已拍板', stats.committed],
-          ['legacy', '旧账', allChapters.filter((chapter) => chapter.legacy).length],
-        ].map(([id, label, count]) => h('button', {
-          key: id,
-          type: 'button',
-          className: 'beat-chip',
-          'data-a': filter === id ? '1' : '0',
-          onClick: () => setFilter(id),
-        }, [h('span', { key: 'l' }, label), h('b', { key: 'c' }, formatNumber(count))]))),
+        activeTab === 'map' && !searchQ.trim() ? h('div', { className: 'beat-filters', key: 'filters' }, [
+          ...[
+            ['all', '全部', stats.decisions],
+            ['open', '待拍板', stats.open],
+            ['committed', '已拍板', stats.committed],
+            ['legacy', '旧账', allChapters.filter((chapter) => chapter.legacy).length],
+          ].map(([id, label, count]) => h('button', {
+            key: id,
+            type: 'button',
+            className: 'beat-chip',
+            'data-a': filter === id ? '1' : '0',
+            onClick: () => setFilter(id),
+          }, [h('span', { key: 'l' }, label), h('b', { key: 'c' }, formatNumber(count))])),
+          h('span', { className: 'beat-sort', key: 'sort' }, '按章倒序'),
+        ]) : null,
         body,
         h('div', { className: 'beat-foot', key: 'foot' }, [
           h('span', { key: 'l' }, data?.book ? 'book.json' : '未连接账本'),
           h('span', { className: 'beat-spacer', key: 's' }),
-          h('span', { key: 'v' }, 'v0.8.0'),
+          h('span', { key: 'v' }, 'v0.9.0'),
         ]),
         sheet ? h('div', {
           className: 'beat-scrim',
@@ -1210,9 +1882,9 @@ window.__ModuleLoader__.load({
           marginRight: 6,
           padding: '0 8px',
           borderRadius: 6,
-          border: '1px solid var(--beat-line)',
+          border: '1px solid color-mix(in srgb, currentColor 20%, transparent)',
           background: 'transparent',
-          color: 'var(--beat-muted)',
+          color: 'inherit',
           fontSize: 11.5,
           lineHeight: '22px',
           cursor: 'pointer',

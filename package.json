@@ -1,6 +1,6 @@
 {
   "name": "dsh-novel-beat",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "AI 写小说，关键剧情由你拍板。右栏「拍板台」按章看全书决策：改选前先看会删多少字、作废几段、撤回哪些设定、重开哪些决策，确认后安全回退，旧正文留档可查。默认关闭，不写正文。",
   "type": "module",
   "main": "index.js",
@@ -22,6 +22,7 @@
     "lib",
     "locale",
     "docs/adapter-contract.md",
+    "docs/contract.md",
     "docs/conductor-adapter.md",
     "docs/tools.md",
     "docs/architecture.md",

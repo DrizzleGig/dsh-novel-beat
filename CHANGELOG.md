@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.9.0 — 2026-11-20
+
+**主题：可信账本——真实 revision、单一提交边界、只读服务与事件、时间线/体检/搜索、朱批纸本 UI。**
+
+### 新增
+
+- **真实版本**：`book.revision` 单调 +1；所有写事务走 `mutateBookData` 提交边界；`commitId = "<书>#<revision>"`；回退接受 `expected_revision`，冲突返回 `revision-conflict` 且正文不动。
+- **只读服务**：`novelBeat` 提供 `identity/getStatus/getRevision/getCanon/getArtifact/onDidCommit`；成功落账后发 `commit.events`（失败不发）。
+- **时间线**：`buildTimeline` 合并 plan/fork/commit/segment/revert/verify/waive/override/stale/check；`timeline` remote + 右栏真实视图。
+- **章末体检**：`buildHealth` 输出 OPEN_DECISION / AWAITING_SEGMENT / PENDING_CONFIRM / NEEDS_CHECK / DRIFT / UNSEGMENTED / OVERDUE_OBLIGATION / STALE / NO_ANCHOR / TEXT_UNAVAILABLE；`health` remote + 右栏视图。
+- **搜索**：`buildSearch` 检索决策 / canon / 义务，支持 q/entity/status/chapter/limit；右栏搜索框与结果跳转。
+- **重写工单**：`buildRewriteBrief` 把回退后的续写指令变成四类硬约束 + 软信息，超限只砍软信息；接入 `resume.prompt`，上限 1200 字。
+- **UI**：右栏改为「朱批纸本 / Ink & Vermilion Ledger」：暖纸、墨字、朱砂、玉色已落账、琥珀待处理；浅/深色；地图/时间线/体检三视图。
+
+### 修正
+
+- `gateFromBook` 先判 `answered + pendingChoice` → `pendingConfirm`，再判 `open`；guard 行为不变。
+- `tools.result` 改为 `(exec, result)` 真实双参；旧测试用真实双参。
+- 0.6→0.7 迁移初始化 `revision`；`beat_segment` 返回整数 `revision` + `revisionRecord`。
+- 体检 `answered` 无 `pendingChoice` 仍算 OPEN_DECISION，避免"0 阻断但写不了"。
+
+### 兼容与边界
+
+- `schemaVersion` 仍为 2；0.6 v1 账本读时迁移；0.7/0.8 账本可直接打开。
+- 仍**不写正文**；回退只在作者确认后截断，旧正文留档。
+- 可选字段未做：`task_context` / `idempotency_key` 留给 0.9.1；conductor 0.1 不需要它们。
+
+### 测试
+
+- `node --test` **257/257**；新增 event/revision/service-v09/timeline/health/search/rewrite-brief 测试；`npm run check`、`git diff --check` 通过。
+
 ## 0.8.0 — 2026-11-17
 
 **主题：右栏「拍板台」——按章看决策、影响预览、安全回退、侧栏改选。**

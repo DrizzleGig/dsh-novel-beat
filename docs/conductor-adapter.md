@@ -4,6 +4,14 @@
 > **本协议在 0.7.0 冻结**：字段名与状态枚举不再改；新增能力只能追加可选字段。
 > Beat **不重新实现剧情判断**，也不允许任何调度器替作者拍板。
 
+## 0.9 增量（2026-11-20，优先读这一节）
+
+- **版本改成整数**：`book.revision` 单调 +1；`expected_revision` 现在是这个整数（不再是 `revisions[]` 的 id）。旧字段 `expectedBookUpdatedAt` 仍接受，两者不一致都拒绝。
+- **只读服务可用**：`ctx.get('novelBeat')` 提供 `identity / getStatus / getRevision / getCanon / getArtifact / onDidCommit`，`service_version:1`；详见 [`contract.md`](./contract.md)。
+- **提交事件**：写事务成功后发 `commit.events`（失败不发，避免订阅者把失败当落账）；`commitId = "<书>#<revision>"`；监听器抛错不影响已提交写。
+- **状态更细**：`getStatus().chapterState` 区分 `open / pending_confirm / awaiting_segment / needs_check / verified`；`stateDetail.open` 与 `pendingConfirm` 分开。
+- **仍未做**：`task_context`、`idempotency_key`（0.9.1）；conductor 0.1 不依赖它们。调用方需先 `typeof service.getStatus === 'function'` 判 0.9。
+
 ## 一、权责边界（不可协商）
 
 1. **Beat 拥有剧情决策权威**：`beat_plan` / `beat_next` / `beat_decide` 只在 Beat 内部有效，

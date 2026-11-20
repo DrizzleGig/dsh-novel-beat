@@ -1,4 +1,6 @@
-# 架构概览（0.7.0）
+# 架构概览（0.9.0）
+
+> 0.9 增量：`book.revision` 单调 +1；所有写走 `mutateBookData` 单一提交边界；`novelBeat` 只读服务 + `onDidCommit`；`lib/timeline.js` / `lib/health.js` / `lib/search.js` 只读读模型；回退接受 `expectedRevision`；契约见 [contract.md](./contract.md)。
 
 给要读账本、接调度、或改这个插件的开发者。作者侧的用法见 [README](../README.md)，工具参数见 [tools.md](./tools.md)。
 

@@ -2,7 +2,8 @@
 
 > 面向：novel-fade / novel-voice / novel-fanfic / Conductor 等要读「拍板」账本的插件。
 > 这是**只读契约**：别的插件可以读，不要写。要写请走 beat 自己的工具，或走 `novelBeat` 服务提供的只读查询。
-> 版本：dsh-novel-beat 0.7.0 / `schemaVersion: 2`（0.6.x 是 1）。
+> 版本：dsh-novel-beat 0.9.0 / `schemaVersion: 2`（0.6.x 是 1）。
+> 0.9 增量：顶层多 `revision`（整数，单调 +1）；`commitId = "<书>#<revision>"`；服务接口见 [contract.md](./contract.md)。
 
 ## 一、文件在哪
 
@@ -25,6 +26,7 @@
 | `schemaVersion` | `2` | 读之前先看它；不认识就降级，不要猜 |
 | `book` / `title` | string | 书名 |
 | `createdAt` / `updatedAt` | ISO string | |
+| `revision` | integer | 0.9 起：每次写 +1；`commitId = <书>#<revision>` |
 | `decisions[]` | 决策点 | 见下 |
 | `canon[]` | 设定事实 | `{ entity, key, value, chapter, decisionId, updatedAt }` |
 | `obligations[]` | 义务/伏笔 | `{ id, text, status, dueChapter, sourceDecision, sourceChapter, ... }` |

@@ -18,7 +18,9 @@ import {
   readActiveBook,
   readBookData,
   resolveWorkspaceRoot,
+  computeRevision,
 } from './lib/store.js'
+import { createReadOnlyService } from './lib/service.js'
 import { evaluateWrite, DEFAULT_BODY_ROOTS, WRITE_TOOL_NAMES } from './lib/enforce.js'
 import { DECISION_STATUS, OPEN_DECISION_STATUSES, TASK_STATE } from './lib/schema.js'
 import { readFileSync } from 'node:fs'
@@ -136,7 +138,10 @@ export function gateFromBook(data) {
     const entry = chapters[key]
       ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, needsCheck: false })
     entry.total += 1
-    if (OPEN_DECISION_STATUSES.includes(decision.status)) {
+    if (decision.status === DECISION_STATUS.ANSWERED && decision.pendingChoice) {
+      // 作者选了一个会改设定的选项，正等作者确认"能不能改"——这时不能往下写。
+      entry.pendingConfirm += 1
+    } else if (OPEN_DECISION_STATUSES.includes(decision.status)) {
       entry.open += 1
     } else if (
       decision.status === DECISION_STATUS.COMMITTED
@@ -144,9 +149,6 @@ export function gateFromBook(data) {
       && decision.legacyReceipt !== true
     ) {
       entry.awaitingSegment += 1
-    } else if (decision.status === DECISION_STATUS.ANSWERED && decision.pendingChoice) {
-      // 作者选了一个会改设定的选项，正等作者确认"能不能改"——这时不能往下写。
-      entry.pendingConfirm += 1
     }
   }
   // 刚登记完一段正文 → 下一次写正文前必须先做一次续写检查（详见 lib/enforce.js）。
@@ -325,6 +327,7 @@ export async function apply(ctx) {
 
   const novelBeatApi = {
     version: VERSION,
+    ...createReadOnlyService({ version: VERSION, gateFromBook }),
     /** 这个会话是不是开着拍板（agentId 传 SessionId 字符串）。 */
     isOn(agentId) {
       return modeCache.get(String(agentId)) === true
@@ -343,7 +346,10 @@ export async function apply(ctx) {
       const scope = (list) => (chapter == null ? (list ?? []) : (list ?? []).filter((item) => item.chapter === chapter))
       return {
         book: target,
+        /** @deprecated 保留一个 minor；请改用 schemaVersion，插件版本见 identity().version。 */
         version: data.schemaVersion,
+        schemaVersion: data.schemaVersion,
+        revision: computeRevision(data),
         chapter: chapter ?? null,
         decisions: scope(data.decisions).map((decision) => ({
           id: decision.id,
@@ -589,28 +595,36 @@ export async function apply(ctx) {
       disposeSkill(id)
     }))
     // 每次 beat_* 跑完都刷新闸门状态：下一次写正文用的就是最新账本
-    ctx.effect(() => ctx.on('tools/result', (exec) => {
+    ctx.effect(() => ctx.on('tools/result', (exec, result) => {
       const name = exec?.name
       const agent = exec?.agent
       if (typeof name !== 'string' || !agent?.id || !name.startsWith('beat_')) return
       // 落账事件：订阅者（fade 的快照、conductor 的任务状态）据此知道"账本变了"。
       const kind = { beat_next: 'commit', beat_decide: 'commit', beat_segment: 'segment', beat_revert: 'revert' }[name]
-      if (kind) {
+      if (kind && result?.isError !== true) {
         const args = exec.arguments ?? exec.args ?? {}
-        const value = exec.result?.value ?? exec.result ?? {}
+        const value = result?.value ?? {}
+        // 幂等重放 / 无变化分支没有写账本，不能重复发落账事件。
+        if (value?.idempotent === true || value?.changed === false) return refreshAgent(agent)
         const ids = kind === 'commit'
-          ? (value?.committed ?? []).map((item) => item?.id ?? item).filter(Boolean)
+          ? (value?.committed ?? (name === 'beat_decide' && value?.id ? [value.id] : []))
+            .map((item) => item?.id ?? item).filter(Boolean)
           : kind === 'segment'
             ? [value?.segment?.id ?? value?.segmentId].filter(Boolean)
-            : (value?.reverted?.revertedSegments ?? []).filter(Boolean)
-        emitCommit({
-          kind,
-          tool: name,
-          book: args.book ?? null,
-          chapter: args.chapter ?? null,
-          ids,
-          at: new Date().toISOString(),
-        })
+            : (value?.reverted?.revertedSegments ?? value?.revertedSegments ?? []).filter(Boolean)
+        const revision = Number.isInteger(value?.revision) ? value.revision : value?.bookRevision
+        if (ids.length > 0 && Number.isInteger(revision) && typeof args.book === 'string') {
+          emitCommit({
+            kind,
+            tool: name,
+            book: args.book,
+            chapter: args.chapter ?? null,
+            ids,
+            revision,
+            commitId: `${args.book}#${revision}`,
+            at: new Date().toISOString(),
+          })
+        }
       }
       return refreshAgent(agent)
     }))  }

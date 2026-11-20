@@ -49,8 +49,8 @@ function fakeHost(dir, agentId = 'session-svc') {
       return () => provided.delete(name);
     },
   };
-  const emit = async (name, payload) => {
-    for (const fn of listeners.get(name) ?? []) await fn(payload);
+  const emit = async (name, ...payloads) => {
+    for (const fn of listeners.get(name) ?? []) await fn(...payloads);
   };
   return { ctx, agent, provided, emit };
 }
@@ -146,27 +146,27 @@ test('novelBeat 服务：onDidCommit 只在落账类工具后触发，可取消�
     name: 'beat_plan',
     agent: h.agent,
     arguments: { book: '书', chapter: 1 },
-  });
+  }, { isError: false, value: { ok: true, revision: 1 }, content: [] });
   assert.equal(events.length, 0, 'beat_plan 只是登记岔路，不算落账');
 
   await h.emit('tools/result', {
     name: 'beat_next',
     agent: h.agent,
     arguments: { book: '书', chapter: 1 },
-    result: { value: { committed: [{ id: 'b1-1' }] } },
-  });
+  }, { isError: false, value: { committed: [{ id: 'b1-1' }], revision: 2 }, content: [] });
   assert.equal(events.length, 1);
   assert.equal(events[0].kind, 'commit');
   assert.deepEqual(events[0].ids, ['b1-1']);
   assert.equal(events[0].book, '书');
   assert.equal(events[0].chapter, 1);
+  assert.equal(events[0].revision, 2);
+  assert.equal(events[0].commitId, '书#2');
 
   await h.emit('tools/result', {
     name: 'beat_segment',
     agent: h.agent,
     arguments: { book: '书', chapter: 1 },
-    result: { value: { segment: { id: 's-0001' } } },
-  });
+  }, { isError: false, value: { segment: { id: 's-0001' }, revision: 3, bookRevision: 3 }, content: [] });
   assert.equal(events.length, 2);
   assert.equal(events[1].kind, 'segment');
   assert.deepEqual(events[1].ids, ['s-0001']);
@@ -176,7 +176,6 @@ test('novelBeat 服务：onDidCommit 只在落账类工具后触发，可取消�
     name: 'beat_revert',
     agent: h.agent,
     arguments: { book: '书', chapter: 1 },
-    result: { value: { reverted: { revertedSegments: ['s-0001'] } } },
-  });
+  }, { isError: false, value: { reverted: { revertedSegments: ['s-0001'] }, revision: 4 }, content: [] });
   assert.equal(events.length, 2, '取消订阅后不再收到');
 });

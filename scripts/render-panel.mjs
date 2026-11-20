@@ -5,6 +5,9 @@ import { readFile, mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
 import { buildChapter, buildOverview, readChapterTitles } from '../lib/panel.js'
+import { buildTimeline } from '../lib/timeline.js'
+import { buildHealth } from '../lib/health.js'
+import { buildSearch } from '../lib/search.js'
 import { planRewind } from '../lib/rewind.js'
 
 const fixture = process.argv[2] ?? 'D:/插件/tmp/beat-v08-ui/.dsh-novel-beat/斗罗：开局炸毁冰火两仪眼'
@@ -18,6 +21,9 @@ const body = await readFile(join(fixture, '..', '..', '正文', '第10章_太子
 const chapterTitles = await readChapterTitles(fixture).catch(() => new Map())
 const overview = buildOverview({ book: book.book, data: book, on: true, chapterTitles })
 const chapter = buildChapter({ book: book.book, data: book, chapter: 10, chapterTitles })
+const timeline = buildTimeline({ book: book.book, data: book, chapter: null, limit: 60, chapterTitles })
+const health = buildHealth({ book: book.book, data: book, chapter: 10, text: body, chapterTitles })
+const searchHits = buildSearch({ book: book.book, data: book, q: '陈凡', limit: 20 })
 const decision = chapter.decisions.find((entry) => entry.id === 'b10-2')
 const plan = body
   ? planRewind({ data: book, decisionId: 'b10-2', choice: 'keep', bodyText: body, fileLength: body.length })
@@ -148,7 +154,7 @@ function page(markup, title, scheme) {
 html,body{margin:0;width:420px;height:900px;overflow:hidden;background:${theme.base}}
 body{${tokenCss}}
 .frame{width:420px;height:900px;background:var(--dsw-alias-bg-base);color:var(--dsw-alias-label-primary);font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif}
-</style></head><body><div class="frame">${markup}</div></body></html>`
+</style></head><body${scheme === 'dark' ? ' data-ds-dark-theme' : ''}><div class="frame">${markup}</div></body></html>`
 }
 
 async function render(name, states, scheme = 'dark') {
@@ -163,41 +169,43 @@ async function render(name, states, scheme = 'dark') {
   const markup = ReactDOMServer.renderToStaticMarkup(
     React.createElement(bodyRegistration.component, { sessionId: 'render-session', remote: {} }),
   )
-  await mkdir(join(outDir, 'mockups', 'impl-v08'), { recursive: true })
-  const htmlPath = join(outDir, 'mockups', 'impl-v08', `${name}-${scheme}.html`)
+  await mkdir(join(outDir, 'mockups', 'impl-v10'), { recursive: true })
+  const htmlPath = join(outDir, 'mockups', 'impl-v10', `${name}-${scheme}.html`)
   await writeFile(htmlPath, page(markup, name, scheme), 'utf8')
   console.log('WROTE', htmlPath, markup.length)
 }
 
-const base = [
-  { phase: 'ready', data: overview, error: null },
-  10,
-  { 10: { phase: 'ready', data: chapter, error: null } },
-  'all',
-  'b10-2',
-  null,
-  null,
-  null,
-]
-await render('map', base, 'light')
-await render('map', base, 'dark')
-await render('rewind', [
-  { phase: 'ready', data: overview, error: null },
-  10,
-  { 10: { phase: 'ready', data: chapter, error: null } },
-  'all',
-  'b10-2',
-  { decision, mode: 'keep', choice: 'keep', plan, busy: false, error: null, snapshot: true, markLaterStale: false },
-  null,
-  null,
-], 'light')
-await render('oldline', [
-  { phase: 'ready', data: overview, error: null },
-  10,
-  { 10: { phase: 'ready', data: chapter, error: null } },
-  'all',
-  null,
-  null,
-  null,
-  { phase: 'ready', data: { chars: body?.length ?? 0, revisionId: 'r-0006', text: body ?? '' }, error: null },
-], 'light')
+function panelStates({ tab = 'map', selected = 'b10-2', sheet = null, oldLine = null, searchQ = '', searchData = null } = {}) {
+  return [
+    { phase: 'ready', data: overview, error: null },
+    10,
+    { 10: { phase: 'ready', data: chapter, error: null } },
+    'all',
+    selected,
+    sheet,
+    null,
+    oldLine,
+    tab,
+    { phase: 'ready', data: timeline, error: null },
+    { phase: 'ready', data: health, error: null },
+    'all',
+    10,
+    { phase: searchData ? 'ready' : 'idle', q: searchQ, data: searchData, error: null },
+    searchQ,
+  ]
+}
+
+await render('map', panelStates(), 'light')
+await render('map', panelStates(), 'dark')
+await render('rewind', panelStates({
+  sheet: { decision, mode: 'keep', choice: 'keep', plan, busy: false, error: null, snapshot: true, markLaterStale: false },
+}), 'light')
+await render('oldline', panelStates({
+  selected: null,
+  oldLine: { phase: 'ready', data: { chars: body?.length ?? 0, revisionId: 'r-0006', text: body ?? '' }, error: null },
+}), 'light')
+await render('timeline', panelStates({ tab: 'timeline', selected: null }), 'light')
+await render('timeline', panelStates({ tab: 'timeline', selected: null }), 'dark')
+await render('health', panelStates({ tab: 'health', selected: null }), 'light')
+await render('health', panelStates({ tab: 'health', selected: null }), 'dark')
+await render('search', panelStates({ selected: null, searchQ: '陈凡', searchData: searchHits }), 'light')

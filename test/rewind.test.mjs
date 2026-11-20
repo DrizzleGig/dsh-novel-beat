@@ -190,6 +190,9 @@ test('executeRewind keep：正文截断、段落作废、canon 回退、目标�
   assert.equal(result.recommitted[0].id, 'b10-2')
   assert.equal(result.reopened[0].id, 'b10-3')
   assert.equal(result.snapshot.text.startsWith('rewinds/'), true)
+  assert.match(result.resume.prompt, /【重写工单】第10章/)
+  assert.match(result.resume.prompt, /写完调 beat_segment/)
+  assert.equal(result.resume.offset, 833)
 
   const truncated = await readFile(join(dir, FILE), 'utf8')
   assert.equal(truncated.length, 833)
@@ -294,6 +297,24 @@ test('executeRewind stale expectedBookUpdatedAt：拒绝且正文不动', async 
   assert.equal(await readFile(file, 'utf8'), before)
   const { data } = await readBookData(dir, BOOK)
   assert.equal(data.segments.find((segment) => segment.id === 's-0002').status, 'committed')
+})
+
+test('executeRewind expectedRevision 不一致：拒绝且正文不动', async (t) => {
+  const { dir } = await fixtureDir(t)
+  const file = join(dir, FILE)
+  const before = await readFile(file, 'utf8')
+  await assert.rejects(
+    () => executeRewind({
+      dir,
+      book: BOOK,
+      decisionId: 'b10-2',
+      choice: 'keep',
+      confirm: true,
+      expectedRevision: 9999,
+    }),
+    (error) => error.code === 'revision-conflict',
+  )
+  assert.equal(await readFile(file, 'utf8'), before)
 })
 
 test('executeRewind 无锚点：拒绝且正文不动', async (t) => {
