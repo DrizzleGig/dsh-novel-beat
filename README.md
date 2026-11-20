@@ -10,7 +10,7 @@ AI 写到会改变故事走向的地方，会停下来，把 2–4 条路和各�
 
 写得久了，想改早期的决定，也不用提心吊胆：先看会动到多少字、哪些设定、哪些后文，再决定要不要退；旧稿留着，想找还能找回来。
 
-**v0.9.0：更清楚地看着这本书。** 右栏换成了「朱批纸本」，新增时间线、章末体检、搜索和重写工单。账本也学会了记「这是第几版」——如果在你动手之前，这本书已经被另一轮写作改过，拍板会先停下来，不会把正文改到一半。
+**v0.9.0 起：更清楚地看着这本书。** 右栏换成了「朱批纸本」，新增时间线、章末体检、搜索和重写工单。账本也学会了记「这是第几版」——如果在你动手之前，这本书已经被另一轮写作改过，拍板会先停下来，不会把正文改到一半。0.9.1 只修了这份说明，功能与 0.9.0 相同。
 
 AI 帮你展开故事，你掌握故事的方向。
 
@@ -76,25 +76,25 @@ AI 帮你展开故事，你掌握故事的方向。
 
 不用改变原来的写作方式，也不用一直开着。
 
-### 1. 安装 v0.9.0
+### 1. 安装 v0.9.1
 
 需要 DeepSeek Harness。插件可以独立安装，不要求同时安装其他小说插件。
 
-**从 npm 安装 0.9.0：**
+**从 npm 安装 0.9.1：**
 
 ```bash
-dsh plugin --profile web add dsh-novel-beat@0.9.0
+dsh plugin --profile web add dsh-novel-beat@0.9.1
 ```
 
-**或从 GitHub 固定到 v0.9.0 标签：**
+**或从 GitHub 固定到 v0.9.1 标签：**
 
 ```bash
-dsh plugin --profile web add "github:DrizzleGig/dsh-novel-beat#v0.9.0"
+dsh plugin --profile web add "github:DrizzleGig/dsh-novel-beat#v0.9.1"
 ```
 
 这里的 `web` 是示例 profile 名，请换成你实际使用的 profile；桌面端若使用 `desktop`，就将 `web` 改为 `desktop`。装好后重启 Harness。
 
-> 不带版本号的 npm 命令会安装当时的 latest；GitHub `main` 与本地源码是开发版，都不等同于固定的 `v0.9.0` 标签。
+> 不带版本号的 npm 命令会安装当时的 latest；GitHub `main` 与本地源码是开发版，都不等同于固定的 `v0.9.1` 标签。
 
 ### 2. 开启拍板
 
@@ -239,7 +239,7 @@ dsh plugin --profile web add "github:DrizzleGig/dsh-novel-beat#v0.9.0"
 | 项目 | 内容 |
 |---|---|
 | 包名 / 中文名 | `dsh-novel-beat` / 拍板 |
-| 本版 | `0.9.0` |
+| 本版 | `0.9.1` |
 | 运行环境 | DeepSeek Harness |
 | 工具数量 | **11 个 `beat_*` 工具** |
 | 账本格式 | **`schemaVersion: 2`**，兼容 v0.7 / v0.8 账本 |
@@ -279,10 +279,11 @@ dsh plugin --profile web add "github:DrizzleGig/dsh-novel-beat#v0.9.0"
 
 ## 版本状态
 
+- **0.9.1**（2026-11-20）：文档修正，README 换成写作者语言；功能与 0.9.0 相同。
 - **0.9.0**（2026-11-20）：账本更可靠（每次改动都有版本，撞车会先停下）、时间线、章末体检、搜索、重写工单、朱批纸本 UI。
 - **0.8.0**（2026-11-17）：右栏「拍板台」、影响预览、安全回退、旧线查看、侧栏改选与待复核。
 - **0.7.0**：把剧情决策做成可回退、可核对的账本。
-- 发布渠道：GitHub Release `v0.9.0`；npm `dsh-novel-beat@0.9.0`。
+- 发布渠道：GitHub Release `v0.9.1`；npm `dsh-novel-beat@0.9.1`。
 - `node --test` **257/257**；真实账本副本的回退、时间线、体检、搜索验证通过。
 - 集成契约见 [`docs/contract.md`](./docs/contract.md)，0.8 实现说明见 [`docs/v0.8.0-implementation.md`](./docs/v0.8.0-implementation.md)。
 
