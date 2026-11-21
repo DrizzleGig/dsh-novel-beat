@@ -123,7 +123,7 @@ function sessionKey(context) {
     ?? context?.sessionId
     ?? null
 }
-/** 舞台监督是否已安装（装了它就是总开关，本插件自己的开关降级为「独立模式」的偏好）。 */
+/** 故事总控是否已安装（装了它就是总开关，本插件自己的开关降级为「独立模式」的偏好）。 */
 function conductorInstalled(ctx) {
   try {
     const conductor = ctx.get?.('novelConductor')
@@ -429,7 +429,7 @@ export async function apply(ctx) {
     }))
   }
 
-  // 舞台监督接管：它开/关时刷新本会话三层（modeCache / L1 技能 / 工具限制），
+  // 故事总控接管：它开/关时刷新本会话三层（modeCache / L1 技能 / 工具限制），
   // 只改内存，不写书目录里的持久开关。事件总线对加载顺序不敏感。
   if (typeof ctx.on === 'function') {
     ctx.effect(() => ctx.on('novel-conductor/drive', (event) => {
@@ -460,16 +460,22 @@ export async function apply(ctx) {
           const cached = gateCache.get(agent.id)
           const roots = (cached?.bodyRoots ?? DEFAULT_BODY_ROOTS).join('、') || '（空：只保护已登记段落）'
           const chapter = cached?.chapter ? `第 ${cached.chapter} 章` : '还没登记本章决策'
+          const conductor = conductorInstalled(ctx)
+            ? (effectiveOn(ctx, false, agent.id)
+              ? '- 故事总控：开（本会话由它接管；你的开关只作独立模式偏好）'
+              : '- 故事总控：关——装了故事总控时它说了算，本插件本会话不工作；要写就 /cue on')
+            : null
           return {
             kind: 'success',
             text: [
               `拍板模式：${state?.on ? '开' : '关'}`,
+              conductor,
               `- 受保护正文目录：${roots}`,
               `- 当前进度：${chapter}${cached?.open ? `，还有 ${cached.open} 个决策没拍板` : ''}`,
               '- 开关：/beat on | /beat off；改保护目录：/beat body 正文|/beat body reset',
               '- 段落：/beat list（列本章段落）；/beat revert [段号]（退这一段及其后所有段，重写）',
               '- 自己插岔路：/beat fork 要不要当场杀掉独孤博',
-            ].join('\n'),
+            ].filter(Boolean).join('\n'),
           }
         }
 
