@@ -123,6 +123,16 @@ function sessionKey(context) {
     ?? context?.sessionId
     ?? null
 }
+/** 舞台监督接管：conductor 开着时，本会话也能用本插件（不改自己的开关与账本）。 */
+function conductorDriving(ctx, key) {
+  if (!key) return false
+  try {
+    const conductor = ctx.get?.('novelConductor')
+    return conductor?.isDriving?.(key) === true
+  } catch {
+    return false
+  }
+}
 
 const BEAT_TOOL_NAMES = toolDefinitions().map((definition) => definition.name)
 
@@ -279,7 +289,7 @@ export async function apply(ctx) {
     }
 
     const settings = await getSessionState(dir, agent.id)
-    const on = settings.mode === 'on'
+    const on = settings.mode === 'on' || conductorDriving(ctx, agent.id)
     const bodyRoots = settings.bodyRoots ?? DEFAULT_BODY_ROOTS
 
     let gate = { chapter: null, open: 0, chapters: {} }
@@ -401,7 +411,17 @@ export async function apply(ctx) {
 
   for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask) })) {
     ctx.effect(() => ctx.tools.register(definition, {
-      when: (context) => modeCache.get(sessionKey(context)) === true,
+      when: (context) => modeCache.get(sessionKey(context)) === true || conductorDriving(ctx, sessionKey(context)),
+    }))
+  }
+
+  // 舞台监督接管：它开/关时刷新本会话三层（modeCache / L1 技能 / 工具限制），
+  // 只改内存，不写书目录里的持久开关。事件总线对加载顺序不敏感。
+  if (typeof ctx.on === 'function') {
+    ctx.effect(() => ctx.on('novel-conductor/drive', (event) => {
+      const agent = event?.agent
+      if (!agent?.id) return
+      refreshAgent(agent).catch(() => {})
     }))
   }
 
