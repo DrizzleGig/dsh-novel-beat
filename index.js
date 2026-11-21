@@ -214,6 +214,8 @@ export async function apply(ctx) {
     ? (request) => userQuestions.ask(request)
     : null
   const modeCache = new Map()
+  const modeSeq = new Map()
+  const agentsById = new Map()
   const gateCache = new Map()
   const restrictions = new Map()
   const skillRegistrations = new Map()
@@ -468,7 +470,7 @@ export async function apply(ctx) {
           return {
             kind: 'success',
             text: [
-              `拍板模式：${state?.on ? '开' : '关'}`,
+              `拍板模式：${state?.on ? '开' : '关'}（独立开关：${cached?.manual ? '开' : '关'}）`,
               conductor,
               `- 受保护正文目录：${roots}`,
               `- 当前进度：${chapter}${cached?.open ? `，还有 ${cached.open} 个决策没拍板` : ''}`,
