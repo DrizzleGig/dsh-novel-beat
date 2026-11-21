@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.2 — 2026-11-21
+
+- 接管：工具门与 `refreshAgent` 改用 `effectiveOn`；订阅 `novel-conductor/drive` 刷新该会话三层（modeCache / L1 技能 / L2 提示 / L3 guard）。
+- `/beat status` 增故事总控说明。
+- 新增 `lib/tool-schema.mjs` + `test/tool-schema.test.mjs`（参数 schema 守卫）。
+
+
 ## 0.9.1 — 2026-11-20
 
 **文档修正：README 换成写作者能读的语言，功能与 0.9.0 相同。**
