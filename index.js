@@ -123,12 +123,26 @@ function sessionKey(context) {
     ?? context?.sessionId
     ?? null
 }
-/** 舞台监督接管：conductor 开着时，本会话也能用本插件（不改自己的开关与账本）。 */
-function conductorDriving(ctx, key) {
-  if (!key) return false
+/** 舞台监督是否已安装（装了它就是总开关，本插件自己的开关降级为「独立模式」的偏好）。 */
+function conductorInstalled(ctx) {
   try {
     const conductor = ctx.get?.('novelConductor')
-    return conductor?.isDriving?.(key) === true
+    return typeof conductor?.isDriving === 'function'
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 本会话的实际生效状态：
+ *   装了 conductor → 只看它接管没接管（beat 自己的按钮优先级更低，此时不生效）；
+ *   没装 conductor → 看本插件自己的开关（独立模式，和以前完全一样）。
+ */
+function effectiveOn(ctx, manualOn, key) {
+  if (!conductorInstalled(ctx)) return manualOn
+  if (!key) return false
+  try {
+    return ctx.get('novelConductor').isDriving(key) === true
   } catch {
     return false
   }
@@ -289,7 +303,7 @@ export async function apply(ctx) {
     }
 
     const settings = await getSessionState(dir, agent.id)
-    const on = settings.mode === 'on' || conductorDriving(ctx, agent.id)
+    const on = effectiveOn(ctx, settings.mode === 'on', agent.id)
     const bodyRoots = settings.bodyRoots ?? DEFAULT_BODY_ROOTS
 
     let gate = { chapter: null, open: 0, chapters: {} }
@@ -411,7 +425,7 @@ export async function apply(ctx) {
 
   for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask) })) {
     ctx.effect(() => ctx.tools.register(definition, {
-      when: (context) => modeCache.get(sessionKey(context)) === true || conductorDriving(ctx, sessionKey(context)),
+      when: (context) => effectiveOn(ctx, modeCache.get(sessionKey(context)) === true, sessionKey(context)),
     }))
   }
 
