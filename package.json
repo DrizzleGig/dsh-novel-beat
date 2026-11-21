@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "node --test",
-    "check": "node --check index.js && node --check client.js && node --check lib/remote.js && node --check lib/remote-contract.js && node --check lib/panel.js && node --check lib/rewind.js && node --check lib/resume.js",
+    "check": "node --check index.js && node --check client.js && node --check lib/remote.js && node --check lib/remote-contract.js && node --check lib/panel.js && node --check lib/rewind.js && node --check lib/resume.js && node --check lib/tool-schema.mjs",
     "check:panel": "node scripts/check-panel.mjs"
   },
   "files": [
