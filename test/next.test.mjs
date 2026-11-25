@@ -153,7 +153,41 @@ test('beat_next：作者自己写答案 → 不编 changes，转成待补（defe
   const decision = data.decisions.find((entry) => entry.id === 'b1-1');
   assert.equal(decision.status, 'answered');
   assert.equal(decision.answerText, '先不动，等他自己送上门');
-  assert.equal(data.requests.length, 0, '没有结构化变化就不造假凭据');
+  assert.equal(decision.pendingCustom.text, '先不动，等他自己送上门', '作者原文要在账本里挂起，右栏才看得见');
+  assert.equal(data.requests.length, 1, '作者作答本身要留 author 凭据');
+  assert.equal(data.requests[0].origin, 'author');
+  assert.equal(data.requests[0].answer.custom, '先不动，等他自己送上门');
+  assert.equal(decision.requestId, data.requests[0].id, '作者凭据要绑到决策上');
+});
+
+test('beat_next：作者自定还没补六要素时，不再问下一题', async (t) => {
+  const dir = await tempDir(t);
+  await plan(dir, 1, [beat('要不要救', '旁观', '出手')]);
+  const { ask, requests } = askReturning({ 'b1-1': { custom: '先不动，等他自己送上门' } });
+  await executeNext({ dir, book: BOOK, chapter: 1 }, { agent: AGENT }, { ask });
+  const asked = requests.length;
+
+  const again = await executeNext({ dir, book: BOOK, chapter: 1 }, { agent: AGENT }, { ask });
+  assert.equal(again.deferred.length, 1);
+  assert.equal(again.deferred[0].id, 'b1-1');
+  assert.match(again.message, /补完整六要素/);
+  assert.equal(requests.length, asked, '待补期间不再打扰作者');
+});
+
+test('beat_next：选项和自定义文本同时回来 → 歧义拒绝，不落账', async (t) => {
+  const dir = await tempDir(t);
+  await plan(dir, 1, [beat('要不要救', '旁观', '出手')]);
+  const ask = async (request) => ({
+    answers: request.questions.map((question) => ({
+      id: question.id, selected: ['选 A'], custom: '我自己写的另一种',
+    })),
+  });
+  await assert.rejects(
+    () => executeNext({ dir, book: BOOK, chapter: 1 }, { agent: AGENT }, { ask }),
+    (error) => error.code === 'ambiguous-answer',
+  );
+  const { data } = await readBookData(dir, BOOK);
+  assert.equal(data.decisions[0].status, 'proposed');
 });
 
 test('beat_next：拍板并登记段落后才算这一段结束，全部完成后 done', async (t) => {

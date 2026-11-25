@@ -56,12 +56,12 @@ test('voice 可用：只取已确认 profile、排序理由可见且不改 gate/
   assert.deepEqual(input, before, '排序与贴合标注不得修改调用方/账本模型')
 })
 
-test('voice 缺席、停用、超时、旧版本均降级且排序回到基线', async (t) => {
+test('voice 缺席、超时、旧版本、无确认档案均降级且排序回到基线', async (t) => {
   const cases = [
     ['缺席', null, 'missing-service'],
-    ['停用', service({ enabled: false }), 'disabled'],
     ['超时', service({ hang: true }), 'timeout'],
     ['旧档', service({ brief: { ok: true, markdown: STYLE, sources: { status: 'confirmed', profileVersion: '1.0' } } }), 'old-profile-unreadable'],
+    ['无确认档案', service({ status: { profiles: [{ id: 'draft', version: '9', status: 'draft' }] } }), 'no-confirmed-profile'],
   ]
   for (const [label, voiceService, reason] of cases) {
     await t.test(label, async () => {
@@ -90,19 +90,20 @@ test('旧 voice 服务缺少 status/profileVersion 契约时不注入未确认�
   assert.equal(result.reason, 'no-confirmed-profile')
 })
 
-test('当前 voice 0.2.2 只读接口缺少会话开关时安全回到基线', async () => {
+test('voice 0.2.2 没有会话开关：以已确认档案为同意信号，0.11.0 能读到文风', async () => {
   const currentPublishedContract = {
     identity: () => IDENTITY,
     getStatus: async () => ({ profiles: [{ id: 'p1', version: '2.4', status: 'confirmed' }] }),
-    getBrief: async () => ({ ok: true, markdown: STYLE, revision: 17, sources: { profileVersion: '2.4', status: 'confirmed' } }),
+    getBrief: async () => ({ ok: true, markdown: STYLE, revision: 17, sources: { profileId: 'p1', profileVersion: '2.4', status: 'confirmed' } }),
   }
   const voice = await loadConfirmedVoice({ service: currentPublishedContract, cwd: 'D:/fixture', book: 'book', chapter: 12 })
-  assert.equal(voice.available, false)
-  assert.equal(voice.reason, 'enabled-state-unavailable')
+  assert.equal(voice.available, true)
+  assert.equal(voice.profileVersion, '2.4')
+  assert.equal(voice.characterProfiles, false)
   const model = chapterFixture()
   const result = applyVoiceFit(model, voice)
-  assert.deepEqual(result.decisions[0].options.map((option) => option.id), ['o-fast', 'o-quiet'])
-  assert.equal(result.voiceFit.available, false)
+  assert.deepEqual(result.decisions[0].options.map((option) => option.id), ['o-quiet', 'o-fast'])
+  assert.equal(result.voiceFit.available, true)
 })
 
 test('voice 只排序已校验 gate 的候选，失效证据仍保持基线且不加贴合标签', async () => {

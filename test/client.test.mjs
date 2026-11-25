@@ -278,6 +278,42 @@ test('决策详情显示 gate 前后值、打断理由、失效证据和六要�
     .every((node) => node.props.disabled), '失效证据必须同时禁用回退和改选')
 })
 
+test('决策详情显示作者自定的原文：待补 changes 与已落账两种状态', () => {
+  const { BeatDecisionDetail } = makeModule().__test
+  const base = {
+    id: 'b12-custom', seq: 1, title: '这一步怎么走', change: '', kind: '分叉', status: 'committed',
+    gate: null, evidenceStatus: { valid: true, status: 'valid' }, canRevert: true,
+    revert: { segments: 1, chars: 20, canonEntries: 0, decisionIds: ['b12-custom'] },
+    segment: { id: 's-12-1', chars: 20, offsetStart: 1, offsetEnd: 21 }, options: [],
+  }
+  const pending = BeatDecisionDetail({
+    decision: {
+      ...base,
+      chosen: null,
+      answerText: '先退出去，守三天',
+      pendingCustom: { text: '先退出去，守三天，等别人先踩雷' },
+    },
+    chapter: 12, total: 1, on: true,
+  })
+  const pendingText = virtualText(pending)
+  assert.match(pendingText, /作者自定 · 原文已入账，待补结构化变化/)
+  assert.match(pendingText, /先退出去，守三天，等别人先踩雷/)
+  assert.match(pendingText, /待补 changes/)
+
+  const committed = BeatDecisionDetail({
+    decision: {
+      ...base,
+      chosen: { label: '先退出去，守三天，等别人先踩雷', source: 'author-custom', custom: true, changes: [] },
+      pendingCustom: null,
+    },
+    chapter: 12, total: 1, on: true,
+  })
+  const committedText = virtualText(committed)
+  assert.match(committedText, /作者自定 · 已落账/)
+  assert.match(committedText, /先退出去，守三天，等别人先踩雷/)
+  assert.match(committedText, /作者自定/)
+})
+
 test('决策详情支持 Escape、Tab 环绕、Shift+Tab 和关闭后回到触发卡片', () => {
   const effects = []
   const { BeatDecisionDetail } = makeModule({ onEffect: (effect) => effects.push(effect) }).__test

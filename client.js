@@ -4,6 +4,9 @@ window.__ModuleLoader__.load({
     const React = require('react')
     const h = React.createElement
 
+    // 版本号只在这里出现一次；test/client-version.test.mjs 会核对它和 package.json 一致。
+    const PLUGIN_VERSION = '0.11.0'
+
     // Keep this contract in sync with lib/remote-contract.js. It is duplicated
     // because this browser factory cannot import a relative Host module.
     function scalar(validate) {
@@ -916,6 +919,137 @@ body[data-ds-dark-theme] .beat-root{
 .beat-sheet-actions .beat-btn[data-p="0"]{flex:0 0 72px}
 .beat-sheet-actions .beat-btn[data-p="1"],.beat-sheet-actions .beat-btn[data-p="1"][data-danger="1"]{background:var(--beat-red);border-color:var(--beat-red);color:var(--beat-on-accent)}
 @media (prefers-reduced-motion:reduce){.beat-root *, .beat-root *:before, .beat-root *:after{transition-duration:0s!important;animation-duration:.01ms!important}}
+
+/* ===== 0.11.0 批校本：只换视觉与交互，不动信息架构 ===== */
+.beat-root{
+  --beat-paper:#f6f2e9;--beat-paper-2:#eee7d8;--beat-card:#fffdf6;
+  --beat-ink:#191713;--beat-ink-2:#5d564a;--beat-ink-3:#8a8070;
+  --beat-line:rgba(25,23,19,.10);--beat-line-2:rgba(25,23,19,.20);
+  --beat-red:#b23a2a;--beat-red-soft:rgba(178,58,42,.08);--beat-red-line:rgba(178,58,42,.30);
+  --beat-jade:#2f6f5e;--beat-jade-soft:rgba(47,111,94,.08);--beat-jade-line:rgba(47,111,94,.28);
+  --beat-amber:#8f5f18;--beat-amber-soft:rgba(143,95,24,.09);--beat-amber-line:rgba(143,95,24,.30);
+  --beat-ui:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+  --beat-serif:"Source Han Serif SC","Noto Serif CJK SC","Songti SC","STSong","SimSun",serif;
+  font-family:var(--beat-ui);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+body[data-ds-dark-theme] .beat-root{
+  --beat-paper:#131315;--beat-paper-2:#1a1a1e;--beat-card:#1e1e23;
+  --beat-ink:#f2eee4;--beat-ink-2:#b3aa9b;--beat-ink-3:#857c6d;
+  --beat-line:rgba(242,238,228,.10);--beat-line-2:rgba(242,238,228,.20);
+  --beat-red:#e0603f;--beat-jade:#5cb39c;--beat-amber:#d6a24d;
+  --beat-red-soft:color-mix(in srgb,var(--beat-red) 12%,transparent);
+  --beat-red-line:color-mix(in srgb,var(--beat-red) 34%,transparent);
+  --beat-jade-soft:color-mix(in srgb,var(--beat-jade) 12%,transparent);
+  --beat-jade-line:color-mix(in srgb,var(--beat-jade) 30%,transparent);
+  --beat-amber-soft:color-mix(in srgb,var(--beat-amber) 12%,transparent);
+  --beat-amber-line:color-mix(in srgb,var(--beat-amber) 32%,transparent);
+}
+.beat-head{padding:16px 18px 0}
+.beat-eyebrow{height:auto;font-size:10px;letter-spacing:.2em;color:var(--beat-ink-3)}
+.beat-eyebrow:before{width:20px;height:1px;background:var(--beat-red);opacity:.85}
+.beat-eyes{margin-top:10px;gap:14px}
+.beat-book{font-family:var(--beat-serif);font-size:19px;font-weight:600;letter-spacing:.01em;line-height:1.3}
+.beat-sub{margin-top:6px;gap:7px;font-size:10.5px;color:var(--beat-ink-2)}
+.beat-mode{font-size:10px;letter-spacing:.02em}
+.beat-ring{width:46px;height:46px}
+.beat-ring svg{width:46px;height:46px}
+.beat-ring .ctr b{font-size:13px}
+.beat-stats{height:46px;margin-top:15px}
+.beat-stat{padding:0 11px;gap:5px}
+.beat-stat b{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.beat-stat span{font-size:9.5px;letter-spacing:.04em;color:var(--beat-ink-3)}
+.beat-tabs{margin-top:13px;gap:22px}
+.beat-tab{height:40px;padding:0;font-size:12px;letter-spacing:.03em;color:var(--beat-ink-2)}
+.beat-tab svg{width:13px;height:13px;opacity:.7}
+.beat-tab b{font-size:9.5px;background:transparent;border:0;padding:0;line-height:1.2;color:var(--beat-ink-3)}
+.beat-tab[data-a="1"]{font-weight:600;color:var(--beat-ink)}
+.beat-tab[data-a="1"]:after{left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.beat-tab[data-a="1"] b{color:var(--beat-red)}
+.beat-filters{padding:12px 18px 10px;gap:7px}
+.beat-chip{height:26px;padding:0 11px;font-size:10.5px;letter-spacing:.02em;border-radius:13px}
+.beat-sort{font-size:10px;letter-spacing:.03em}
+.beat-search{height:40px;padding:0 18px;gap:9px}
+.beat-search-input{font-size:12px;font-family:var(--beat-ui)}
+.beat-search-head{padding:12px 0 8px;font-size:9.5px;letter-spacing:.08em}
+.beat-sr{padding:12px 0}
+.beat-sr-title{font-family:var(--beat-serif);font-size:12.5px;margin-top:4px;line-height:1.5}
+.beat-sr-choice{font-size:10.5px}
+.beat-chap{min-height:78px;padding:12px 18px;gap:14px}
+.beat-chap-no{width:34px;font-size:22px;font-weight:300;letter-spacing:-.02em;color:var(--beat-ink-3)}
+.beat-chap-name{font-family:var(--beat-serif);font-size:14px;font-weight:600;line-height:1.35}
+.beat-chap[data-current="1"] .beat-chap-name{font-size:14.5px}
+.beat-chap-meta{margin-top:4px;font-size:10px;gap:6px}
+.beat-chap-state{font-size:10px;letter-spacing:.03em}
+.beat-segbar{margin-top:7px;gap:3px}
+.beat-segbar i{height:3px;max-width:20px}
+.beat-decs{padding:6px 18px 10px 68px}
+.beat-decs:before{left:22px;top:4px;bottom:12px;width:1px;background:var(--beat-line-2)}
+.beat-dec{padding:11px 2px 11px 0;gap:10px}
+.beat-dec-title{font-family:var(--beat-serif);font-size:13px;line-height:1.5;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.beat-dec-choice{font-size:11px;line-height:1.55;margin-top:3px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.beat-dec-meta{margin-top:6px;font-size:9.5px;gap:6px}
+.beat-kind{height:17px;font-size:9px;line-height:15px}
+.beat-dec-badge{font-size:9.5px;letter-spacing:.03em}
+.beat-seal{width:21px;height:21px;font-size:10.5px;border-radius:3px;transform:rotate(-4deg)}
+.beat-dec[data-a="1"]{padding:11px 10px 11px 12px;border-radius:8px;box-shadow:0 1px 0 color-mix(in srgb,var(--beat-ink) 4%,transparent),0 10px 24px color-mix(in srgb,var(--beat-ink) 8%,transparent)}
+.beat-detail{border-radius:12px;box-shadow:0 14px 34px color-mix(in srgb,var(--beat-ink) 12%,transparent)}
+.beat-detail-inner{padding:16px 16px}
+.beat-detail-title{font-family:var(--beat-serif)}
+.beat-detail-top{font-size:9.5px;padding-right:42px}
+.beat-detail-stamp{width:36px;height:36px;font-size:9.5px}
+.beat-gate-title,.beat-opt-heading,.beat-evidence-status{letter-spacing:.04em}
+.beat-opt-label{font-family:var(--beat-serif);font-size:12px}
+.beat-opt-field{font-size:10.5px;line-height:1.6}
+.beat-opt-letter{font-size:10px}
+.beat-sheet{padding:14px 18px calc(18px + env(safe-area-inset-bottom))}
+.beat-sheet-sub{font-size:11px;line-height:1.6}
+.beat-sheet-k{font-size:9px;letter-spacing:.06em}
+.beat-sheet-v{font-size:10px;line-height:1.6}
+.beat-sheet-actions .beat-btn{min-height:38px;font-size:11px}
+.beat-foot{height:32px;padding:0 18px;font-size:9.5px;letter-spacing:.03em}
+.beat-tl-entry{padding:11px 0}
+.beat-tl-time{font-size:9.5px}
+.beat-tl-summary{font-size:11.5px;line-height:1.55}
+.beat-hl-title{font-family:var(--beat-serif);font-size:13px}
+.beat-hl-item-t{font-size:11.5px;line-height:1.5}
+.beat-hl-item-d{font-size:10px;line-height:1.55}
+.beat-voice-status{padding:8px 0;font-size:9.5px}
+.beat-empty b{font-family:var(--beat-serif);font-size:13px}
+.beat-empty div{font-size:10.5px;line-height:1.6}
+.beat-custom{margin-top:8px;padding:10px 12px;border:1px solid var(--beat-red-line);border-left:2px solid var(--beat-red);border-radius:6px;background:var(--beat-red-soft)}
+.beat-custom-k{font-size:9px;letter-spacing:.08em;color:var(--beat-red);margin-bottom:5px}
+.beat-custom-text{font-family:var(--beat-serif);font-size:12px;line-height:1.65;color:var(--beat-ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.beat-custom-note{margin-top:6px;font-size:9.5px;color:var(--beat-ink-3)}
+.beat-kind-custom{border-color:var(--beat-red-line);background:var(--beat-red-soft);color:var(--beat-red)}
+.beat-kind-loop{margin-left:4px;border-color:var(--beat-line-2);background:transparent;color:var(--beat-ink-3);font-size:8.5px;letter-spacing:.02em}
+
+/* 批校本 · 版面细节 */
+.beat-root{background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 55%,transparent),transparent 148px)}
+body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 70%,transparent),transparent 148px)}
+.beat-head{padding-top:18px}
+.beat-eyebrow{color:var(--beat-ink-3)}
+.beat-book{font-size:20px;line-height:1.28}
+.beat-stats{height:52px;margin-top:16px;border-top:1px solid var(--beat-line-2);border-bottom:1px solid var(--beat-line)}
+.beat-stat{flex-direction:column;align-items:flex-start;justify-content:center;gap:0;padding:0 12px}
+.beat-stat b{font-size:21px;font-weight:500;letter-spacing:-.02em;line-height:1.1}
+.beat-stat span{font-size:9px;letter-spacing:.12em;color:var(--beat-ink-3);margin-top:1px}
+.beat-tabs{margin-top:14px;gap:26px;border-bottom:1px solid var(--beat-line-2)}
+.beat-tab{height:42px;letter-spacing:.05em}
+.beat-tab[data-a="1"]:after{height:2px;background:var(--beat-red)}
+.beat-tab:hover{color:var(--beat-ink)}
+.beat-filters{padding-top:13px}
+.beat-chip[data-a="1"]{background:var(--beat-ink);border-color:var(--beat-ink);color:var(--beat-paper)}
+.beat-chap{position:relative}
+.beat-chap[data-current="1"]{background:linear-gradient(90deg,color-mix(in srgb,var(--beat-red-soft) 70%,transparent),transparent 58%)}
+.beat-chap-name{letter-spacing:.01em}
+.beat-chap-meta b{color:var(--beat-ink-2)}
+.beat-chap-state{font-size:9.5px;letter-spacing:.06em}
+.beat-dec-title{letter-spacing:.01em}
+.beat-dec[data-state="committed"] .beat-seal{transform:rotate(-5deg)}
+.beat-voice-status{display:block;padding:9px 0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line);background:transparent;color:var(--beat-ink-3);line-height:1.6}
+.beat-voice-status b{display:block;font-weight:500;color:var(--beat-ink-2);font-size:9px;letter-spacing:.1em;margin-bottom:1px}
+.beat-voice-status span{display:block;font-size:9.5px}
+.beat-foot{border-top:1px solid var(--beat-line-2);color:var(--beat-ink-3);letter-spacing:.08em}
 `
 
     function formatNumber(value) {
@@ -1150,8 +1284,19 @@ body[data-ds-dark-theme] .beat-root{
               h('div', { className: 'beat-cur-k', key: 'k' }, '当前选择'),
               h('div', { className: 'beat-cur-v', key: 'v' }, chosenLabel || '还没拍板'),
             ]),
-            h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen ? '已落账' : '待问'),
+            h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen
+              ? (decision.chosen.source === 'author-custom' ? '作者自定' : '已落账')
+              : (decision.pendingCustom ? '待补 changes' : '待问')),
           ]),
+          decision.pendingCustom ? h('div', { className: 'beat-custom', key: 'custom-pending' }, [
+            h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 原文已入账，待补结构化变化'),
+            h('div', { className: 'beat-custom-text', key: 't' }, decision.pendingCustom.text),
+            h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完 changes 后落账；补完前不会继续写正文。'),
+          ]) : null,
+          decision.chosen?.source === 'author-custom' ? h('div', { className: 'beat-custom', key: 'custom-committed' }, [
+            h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 已落账'),
+            h('div', { className: 'beat-custom-text', key: 't' }, decision.chosen.customText ?? chosenLabel),
+          ]) : null,
           h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option, index) => h('div', {
             className: 'beat-opt',
             key: option.label,
@@ -1900,6 +2045,9 @@ body[data-ds-dark-theme] .beat-root{
                 h('span', { key: 's' }, [h('b', { key: 'b2' }, formatNumber(chapter.segments)), ' 段']),
                 h('span', { key: 'dot3' }, '·'),
                 h('span', { key: 'c' }, [h('b', { key: 'b3' }, formatNumber(chapter.chars)), ' 字']),
+                chapter.writingMode === 'segment-loop'
+                  ? h('span', { key: 'loop', className: 'beat-kind beat-kind-loop', title: chapter.mergeHash ? `已合并 ${String(chapter.mergeHash).slice(0, 12)}…` : '段落循环章，尚未合并' }, '段落模式')
+                  : null,
               ]),
               h(SegBar, { key: 'segments', chapter, decisions: chapterDecisions }),
             ]),
@@ -1966,13 +2114,16 @@ body[data-ds-dark-theme] .beat-root{
                       className: 'beat-dec-choice',
                       key: 'choice',
                       'data-empty': decision.chosen ? '0' : '1',
-                    }, decision.chosen?.label ?? '还没拍板'),
+                    }, decision.chosen?.label ?? decision.pendingCustom?.text ?? '还没拍板'),
                     h('div', { className: 'beat-dec-meta', key: 'meta' }, [
                       h('span', {
                         key: 'kind',
                         className: 'beat-kind',
                         style: { '--beat-kind': kindTone(decision.kind) },
                       }, decision.kind),
+                      (decision.chosen?.source === 'author-custom' || decision.pendingCustom)
+                        ? h('span', { key: 'custom', className: 'beat-kind beat-kind-custom' }, '作者自定')
+                        : null,
                       h('span', { key: 'chg' }, `改 ${formatNumber(decision.chosen?.changes?.length ?? 0)} 条设定`),
                       h('span', { className: 'sep', key: 's1' }, '·'),
                       h('span', { key: 'chars' }, decision.segment ? `${formatNumber(decision.segment.chars)} 字` : '无正文锚点'),
@@ -2234,7 +2385,7 @@ body[data-ds-dark-theme] .beat-root{
         h('div', { className: 'beat-foot', key: 'foot' }, [
           h('span', { key: 'l' }, data?.book ? 'book.json' : '未连接账本'),
           h('span', { className: 'beat-spacer', key: 's' }),
-          h('span', { key: 'v' }, 'v0.10.2'),
+          h('span', { key: 'v' }, `v${PLUGIN_VERSION}`),
         ]),
         sheet ? h('div', {
           className: 'beat-scrim',

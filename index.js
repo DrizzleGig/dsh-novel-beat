@@ -15,11 +15,13 @@ import {
   getSessionState,
   setSessionMode,
   setSessionBodyRoots,
+  setSessionVoice,
   readActiveBook,
   readBookData,
   resolveWorkspaceRoot,
   computeRevision,
 } from './lib/store.js'
+import { loadVoiceGuidance } from './lib/voice-fit.js'
 import { createReadOnlyService } from './lib/service.js'
 import { evaluateWrite, DEFAULT_BODY_ROOTS, WRITE_TOOL_NAMES } from './lib/enforce.js'
 import { DECISION_STATUS, OPEN_DECISION_STATUSES, TASK_STATE } from './lib/schema.js'
@@ -74,6 +76,8 @@ const SYSTEM_RULES = [
     ? '7. 每次 `beat_append` 后、下一次追加之前，必须对最新段调用 `beat_plan`：有真岔路就登记这一个；确实没有就传 `beats: [] + reason`。这确保每个段落都经过续写检查。'
     : '7. 每登记完一段（`beat_segment`），写下一段之前必须先做一次**续写检查**：后面有真岔路就 `beat_plan` 登记这一个；确实没有就 `beat_plan(beats: [], reason: \'为什么不用作者拍板\', path 或 text)`。没做检查就写正文会被拒（`CONTINUATION_CHECK`）。这不是形式——它保证段落边界是顺着剧情长的，而不是事后切的。',
   '8. 作者选的选项要是会改掉账本里的既有设定，`beat_next` 不会硬失败：它会让你去问作者"是否允许这次剧情改这个设定"，作者同意后再 `beat_next(confirmCanon: true)` 提交。',
+  '9. 提问卡的最后一行是宿主的自由输入行：作者可以直接写自己的走向。不要在正文里再列一遍选项，也不要替他拟第四个选项；作者写了原文后，先 `beat_decide`（choice 用作者原话 + changes）落账，再写正文。',
+  '10. 生成选项前先看最近一次工具结果里的 `voiceGuidance`：可用时按它写 action/costs/outcomes 的切入点、语气与代价感；不可用时按中性写。不得借文风改写既定事实、伪造证据，或把风格差异写成难度/智商差异。',
   '',
   '把这条规则当成作者亲手设的约束：不解释、不绕过、不"先写一版看看"。',
   ...(SEGMENT_LOOP_ENABLED ? [
@@ -211,11 +215,14 @@ export function gateFromBook(data) {
   for (const decision of data.decisions ?? []) {
     const key = String(decision.chapter)
     const entry = chapters[key]
-      ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, needsCheck: false })
+      ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, pendingCustom: 0, needsCheck: false })
     entry.total += 1
     if (decision.status === DECISION_STATUS.ANSWERED && decision.pendingChoice) {
       // 作者选了一个会改设定的选项，正等作者确认"能不能改"——这时不能往下写。
       entry.pendingConfirm += 1
+    } else if (decision.status === DECISION_STATUS.ANSWERED && decision.pendingCustom) {
+      // 0.11.0：作者自己写了走向，原文已入账，但模型还没补结构化 changes——补完之前不能写正文。
+      entry.pendingCustom += 1
     } else if (OPEN_DECISION_STATUSES.includes(decision.status)) {
       entry.open += 1
     } else if (
@@ -229,7 +236,7 @@ export function gateFromBook(data) {
   // 刚登记完一段正文 → 下一次写正文前必须先做一次续写检查（详见 lib/enforce.js）。
   for (const [key, state] of Object.entries(data.chapters ?? {})) {
     if (state?.continuationCheckRequired !== true) continue
-    const entry = chapters[key] ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, needsCheck: false })
+    const entry = chapters[key] ?? (chapters[key] = { total: 0, open: 0, awaitingSegment: 0, pendingCustom: 0, needsCheck: false })
     entry.needsCheck = true
   }
 
@@ -479,7 +486,41 @@ export async function apply(ctx) {
     ctx.effect(() => ctx.provide('novelBeat', novelBeatApi))
   }
 
-  for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask), segmentLoop: SEGMENT_LOOP_ENABLED })) {
+  // 0.11.0：选项写法基线。voice 只读、可降级；没有服务或作者关掉时返回中性说明。
+  const voiceProvider = async (args, exec) => {
+    const dir = typeof args?.dir === 'string' ? args.dir : null
+    const book = typeof args?.book === 'string' ? args.book : null
+    if (!dir || !book) return null
+    const sessionId = exec?.agent?.id ?? null
+    let mode = 'auto'
+    if (sessionId) {
+      try {
+        mode = (await getSessionState(dir, sessionId)).voice ?? 'auto'
+      } catch {
+        mode = 'auto'
+      }
+    }
+    let service = null
+    try {
+      service = ctx.get('novelVoice') ?? null
+    } catch {
+      service = null
+    }
+    return loadVoiceGuidance({
+      service,
+      cwd: dir,
+      book,
+      chapter: Number(args.chapter) || null,
+      mode,
+    })
+  }
+
+  for (const definition of toolDefinitions({
+    ask,
+    askAvailable: Boolean(ask),
+    segmentLoop: SEGMENT_LOOP_ENABLED,
+    voiceProvider,
+  })) {
     ctx.effect(() => ctx.tools.register(definition, {
       when: (context) => effectiveOn(ctx, modeCache.get(sessionKey(context)) === true, sessionKey(context)),
     }))
@@ -498,7 +539,7 @@ export async function apply(ctx) {
   if (commands?.register) {
     ctx.effect(() => commands.register({
       name: 'beat',
-      description: '拍板模式：/beat on、/beat off、/beat status、/beat body [路径|reset]、/beat list [章]、/beat revert [段号]、/beat fork <要决定什么>',
+      description: '拍板模式：/beat on、/beat off、/beat status、/beat voice [auto|off]、/beat body [路径|reset]、/beat list [章]、/beat revert [段号]、/beat fork <要决定什么>',
       handler: async (invocation) => {
         const raw = String(invocation?.rawInput ?? '')
           .trim()
@@ -529,6 +570,7 @@ export async function apply(ctx) {
               `- 受保护正文目录：${roots}`,
               `- 当前进度：${chapter}${cached?.open ? `，还有 ${cached.open} 个决策没拍板` : ''}`,
               '- 开关：/beat on | /beat off；改保护目录：/beat body 正文|/beat body reset',
+              '- 选项写法：/beat voice auto（跟随已确认文风）| /beat voice off（中性）',
               '- 段落：/beat list（列本章段落）；/beat revert [段号]（退这一段及其后所有段，重写）',
               '- 自己插岔路：/beat fork 要不要当场杀掉独孤博',
             ].filter(Boolean).join('\n'),
@@ -551,6 +593,44 @@ export async function apply(ctx) {
           return {
             kind: 'success',
             text: `${forked.message}\n（也可以直接说给模型听：这里要插一个岔路——它会用 beat_fork 登记。）`,
+          }
+        }
+
+        if (action === 'voice') {
+          // 0.11.0：选项写法是否跟随已确认文风。auto=跟随档案（默认），off=强制中性。
+          const target = (parts[1] || 'status').toLowerCase()
+          if (target === 'on' || target === 'off' || target === 'auto') {
+            const saved = await setSessionVoice(dir, agent.id, target)
+            await refreshAgent(agent)
+            return {
+              kind: 'success',
+              text: target === 'off'
+                ? '选项写法：中性。文风不再影响选项内容（追问时仍可 /beat voice auto 恢复）。'
+                : '选项写法：跟随已确认文风（没有已确认档案时自动中性）。',
+            }
+          }
+          const state = await getSessionState(dir, agent.id)
+          const active = await readActiveBook(dir)
+          let service = null
+          try {
+            service = ctx.get('novelVoice') ?? null
+          } catch {
+            service = null
+          }
+          const guidance = active
+            ? await loadVoiceGuidance({
+              service, cwd: dir, book: active.book, chapter: null, mode: state.voice ?? 'auto',
+            })
+            : null
+          return {
+            kind: 'success',
+            text: [
+              `选项写法：${state.voice === 'off' ? '中性（作者已关闭）' : '跟随已确认文风'}`,
+              guidance
+                ? `- 当前：${guidance.available ? `${guidance.label} · v${guidance.profileVersion}` : guidance.label}——${guidance.message}`
+                : '- 还没有账本，无法检测文风；有账本后自动检测。',
+              '- 开关：/beat voice auto（跟随已确认档案，默认）| /beat voice off（强制中性）',
+            ].join('\n'),
           }
         }
 
@@ -620,7 +700,7 @@ export async function apply(ctx) {
         if (action !== 'on' && action !== 'off' && action !== 'revert' && action !== 'list' && action !== 'fork') {
           return {
             kind: 'error',
-            text: '用法：/beat on | /beat off | /beat status | /beat body [路径|reset] | /beat list [章] | /beat revert [段号] | /beat fork <要决定什么>',
+            text: '用法：/beat on | /beat off | /beat status | /beat voice [auto|off] | /beat body [路径|reset] | /beat list [章] | /beat revert [段号] | /beat fork <要决定什么>',
           }
         }
 

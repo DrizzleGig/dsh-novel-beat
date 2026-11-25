@@ -207,7 +207,7 @@ test('M4a gateFromBook：待确认与 proposed 分开计数，正文写入仍拦
   ]) {
     const gate = gateFromBook({ decisions: [{ id: 'b-1', chapter: 1, status, pendingChoice }] });
     assert.equal(gate.open, open);
-    assert.deepEqual(gate.chapters['1'], { total: 1, open, awaitingSegment: 0, pendingConfirm, needsCheck: false });
+  assert.deepEqual(gate.chapters['1'], { total: 1, open, awaitingSegment: 0, pendingConfirm, pendingCustom: 0, needsCheck: false });
     const write = evaluateWrite({
       toolName: 'write', args: { file_path: '正文/第1章.md' }, cwd: process.cwd(),
       state: { on: true, ...gate },
@@ -236,7 +236,7 @@ test('M2 getStatus：仅章节续写检查时补齐五个 stateDetail 字段', a
   });
   const result = await service.getStatus({ cwd: dir, chapter: 4 });
   assert.equal(result.chapterState, 'needs_check');
-  assert.deepEqual(result.stateDetail, { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, needsCheck: true });
+  assert.deepEqual(result.stateDetail, { total: 0, open: 0, awaitingSegment: 0, pendingConfirm: 0, pendingCustom: 0, needsCheck: true });
 });
 
 for (const [name, configure, expected] of [

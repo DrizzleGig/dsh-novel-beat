@@ -195,16 +195,15 @@ test('remote.chapter 只读接 voice 文风排序，接口缺少本会话开关�
     isEnabled: undefined,
     getBrief: async (...args) => { briefCalls += 1; return voice.getBrief(...args) },
   }
-  const unavailable = await decisionRemote(t, currentPublishedVoice)
-  const fallback = await unavailable.remote.chapter(unavailable.agent.id, 1)
-  assert.equal(fallback.voiceFit.available, false)
-  assert.equal(fallback.voiceFit.reason, 'enabled-state-unavailable')
-  assert.match(fallback.voiceFit.message, /本会话开关状态/u)
-  assert.deepEqual(fallback.decisions[0].options.map((option) => option.label), ['立即告知', '暂缓说明'])
-  assert.equal(briefCalls, 0, '开关状态未知时不得读取文风简报')
-  assert.deepEqual(decision.gate, fallback.decisions[0].gate)
+  const supported = await decisionRemote(t, currentPublishedVoice)
+  const withVoice = await supported.remote.chapter(supported.agent.id, 1)
+  assert.equal(withVoice.voiceFit.available, true, '0.11.0：以已确认档案为同意信号，不再依赖 isEnabled')
+  assert.equal(withVoice.voiceFit.profileVersion, '2.4')
+  assert.deepEqual(withVoice.decisions[0].options.map((option) => option.label), ['暂缓说明', '立即告知'])
+  assert.equal(briefCalls, 1, '已确认文风会被缓存，同一会话不重复读简报')
+  assert.deepEqual(decision.gate, withVoice.decisions[0].gate)
   for (const option of decision.options) {
-    const baseline = fallback.decisions[0].options.find((entry) => entry.label === option.label)
+    const baseline = withVoice.decisions[0].options.find((entry) => entry.label === option.label)
     assert.deepEqual(option.changes, baseline.changes)
     assert.deepEqual(option.risks, baseline.risks)
   }

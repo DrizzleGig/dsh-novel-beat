@@ -1,4 +1,4 @@
-# `beat_*` 工具参考（0.10.2 本地实现；0.11.0-dev 实验）
+# `beat_*` 工具参考（0.11.0）
 
 面向接账本的开发者和想弄清内部流程的作者。作者日常只需要 `/beat` 命令（见 README）和输入框上方的拍板台。
 
@@ -8,6 +8,14 @@ legacy 工具都接受两个公共参数：
 - `book`：书名或账本路径，默认当前工作区里唯一/最近的那本。
 
 其余参数按章号（`chapter`）组织。**工具参数会随版本演进**，以会话里工具定义的实际 schema 为准；本页只保证语义准确。
+
+## 0.11.0 作者自定拍板、文风写法基线与段落循环（本版）
+
+**空白/自己写**：`beat_next` 的提问卡由宿主渲染，选项下面固定带自由输入行（`answer.custom`）。插件在 `detail` 里明确提示"最后一行可以直接写你自己的走向"，不另造 sentinel 选项，避免出现"按钮 + 输入框"两个入口。作者只写自由文本时，`commitAnswers` 把决策置 `answered`、原文写入 `answerText` 与 `pendingCustom`，不做任何状态编造；此时写正文会被闸门以 `PENDING_STRUCTURED_CHANGES` 拦下，直到模型用 `beat_decide`（choice 用作者原话 + `changes`）把决策落成 `committed(source: 'author-custom')`。右栏的决策地图、时间线与决策详情都会标"作者自定"并显示原文；回退时按旧线归档保留原文与 changes。
+
+**文风写法基线（voiceGuidance）**：`beat_plan`、`beat_next`、`beat_segment`、`beat_append`、`beat_verify` 的成功结果会附带 `voiceGuidance`：可用时含 ≤1200 字的已确认文风摘要、`profileId/profileVersion/revision/digest`；不可用时含 `reason` 与中性说明。模型据此写选项的 `action/costs/outcomes` 的切入点、语气与代价感。判定"可用"只要求 voice 只读接口报告 `voice.brief` 能力、存在 `status: 'confirmed'` 且带版本的档案、`getBrief` 回执确认同一档案版本；**不要求 voice 提供会话开关**（0.2.2 没有）。拍板侧提供 `/beat voice auto|off`，`off` 时强制中性且不读 voice。文风只影响措辞，不得改写事实、伪造证据或把风格差异变成难度差异。
+
+**段落循环（默认关闭）**：`DSH_NOVEL_BEAT_SEGMENT_LOOP=1` 才注册 `beat_append` / `beat_finish`。一段一个自然段，段后必须 `beat_plan` 并绑定最新 `segmentId/segmentHash/expectedRevision`；有岔路先 `beat_next` 等作者，下一次 `beat_append` 才登记输出段；无岔路用 `beats: [] + reason`。章末 `beat_finish` 做确定性合并，把返回文本原样交给 `beat_verify`。artifact 只写 `.dsh-novel-beat/<书>/`，不写章节文件；与 legacy `beat_segment` 不得混章。
 
 ## 0.10.2 拍板台与只读 voice 建议（未发布）
 

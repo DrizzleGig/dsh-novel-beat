@@ -196,6 +196,23 @@ test('evaluateWrite：作者选了会改设定的选项、还没确认 → PENDI
   assert.match(blocked.reason, /待确认/);
 });
 
+test('evaluateWrite：作者自己写了走向、还没补结构化变化 → PENDING_STRUCTURED_CHANGES', () => {
+  const blocked = evaluateWrite({
+    toolName: 'write',
+    args: { file_path: '正文/第8章_雷霆之力.md' },
+    cwd: CWD,
+    state: {
+      on: true,
+      chapter: 8,
+      open: 0,
+      chapters: { 8: { total: 2, open: 0, awaitingSegment: 0, needsCheck: false, pendingCustom: 1 } },
+    },
+  });
+  assert.equal(blocked.blocked, true);
+  assert.equal(blocked.detail.code, DENY.PENDING_STRUCTURED_CHANGES);
+  assert.match(blocked.reason, /beat_decide/);
+});
+
 test('evaluateWrite：文件名认不出章号时退回账本进度（已知边界）', () => {
   const blocked = evaluateWrite({
     toolName: 'write',

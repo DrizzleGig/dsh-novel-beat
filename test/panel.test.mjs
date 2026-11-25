@@ -140,6 +140,9 @@ test('overview 按章聚合统计、当前章、旧账与无锚点', () => {
     stale: null,
     verifiedAt: null,
     continuationCheckRequired: false,
+    writingMode: 'legacy',
+    mergeHash: null,
+    mergedAt: null,
   })
   assert.equal(byChapter.get(9).legacy, true)
   assert.equal(byChapter.get(9).noAnchor, 1)
