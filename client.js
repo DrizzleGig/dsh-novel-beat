@@ -1347,6 +1347,7 @@ body[data-ds-dark-theme] .beat-root{
 .beat-papers{position:absolute;top:44px;right:14px;z-index:20;display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--beat-line-2);border-radius:12px;background:var(--beat-card);box-shadow:0 12px 30px color-mix(in srgb,var(--beat-ink) 16%,transparent)}
 .beat-paper-swatch{width:56px;height:40px;border-radius:8px;border:1px solid var(--beat-line-2);cursor:pointer;font-size:9.5px;color:#5b5245;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px}
 .beat-paper-swatch:hover{outline:2px solid var(--beat-primary-line)}
+.beat-paper-swatch[data-paper="auto"]{background:linear-gradient(135deg,#f7f1e6 0 50%,#1e1c18 50% 100%);color:#8a8070}
 .beat-paper-swatch[data-paper="xuan"]{background:#f7f1e6}
 .beat-paper-swatch[data-paper="mi"]{background:#faf6ec}
 .beat-paper-swatch[data-paper="hui"]{background:#f1f0ec}
@@ -1355,13 +1356,13 @@ body[data-ds-dark-theme] .beat-root{
 .beat-paper-swatch[data-paper="ye"]{background:#1e1c18;color:#e9e2d3;border-color:#3a352d}
 
 /* 六套主题：只覆盖 token，结构不动 */
-.beat-root[data-paper="xuan"]{--beat-paper:#f7f1e6;--beat-paper-2:#efe6d4;--beat-card:#fffdf8;--beat-ink:#1c1814;--beat-ink-2:#5f574a;--beat-ink-3:#948974;--beat-line:rgba(28,24,20,.10);--beat-line-2:rgba(28,24,20,.20)}
-.beat-root[data-paper="mi"]{--beat-paper:#faf5e9;--beat-paper-2:#f2ead9;--beat-card:#fffefa;--beat-ink:#211d17;--beat-ink-2:#655c4d;--beat-ink-3:#9a8f7b;--beat-line:rgba(33,29,23,.09);--beat-line-2:rgba(33,29,23,.18)}
-.beat-root[data-paper="hui"]{--beat-paper:#f1f0ec;--beat-paper-2:#e8e6e0;--beat-card:#fbfaf7;--beat-ink:#1b1a17;--beat-ink-2:#5c5a52;--beat-ink-3:#8f8b80;--beat-line:rgba(27,26,23,.09);--beat-line-2:rgba(27,26,23,.18);--beat-primary:#3a566b}
-.beat-root[data-paper="qing"]{--beat-paper:#edf4f0;--beat-paper-2:#e2ede7;--beat-card:#fbfdfb;--beat-ink:#182420;--beat-ink-2:#4e5f57;--beat-ink-3:#83948b;--beat-line:rgba(24,36,32,.09);--beat-line-2:rgba(24,36,32,.18);--beat-primary:#2f5d54}
-.beat-root[data-paper="wu"]{--beat-paper:#edf0f5;--beat-paper-2:#e2e7ef;--beat-card:#fbfcfe;--beat-ink:#1a1f26;--beat-ink-2:#525b67;--beat-ink-3:#89929e;--beat-line:rgba(26,31,38,.09);--beat-line-2:rgba(26,31,38,.18);--beat-primary:#3b5876}
-.beat-root[data-paper="ye"]{--beat-paper:#1e1c18;--beat-paper-2:#26231d;--beat-card:#2b2721;--beat-ink:#f1e9da;--beat-ink-2:#bcb19d;--beat-ink-3:#8d8271;--beat-line:rgba(241,233,218,.10);--beat-line-2:rgba(241,233,218,.20);--beat-primary:#8fb0c8;--beat-red:#e0704f;--beat-jade:#63b79f;--beat-amber:#d9a45a;background-image:none}
-.beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-color:#c7bda9}
+body .beat-root[data-paper="xuan"]{--beat-paper:#f7f1e6;--beat-paper-2:#efe6d4;--beat-card:#fffdf8;--beat-ink:#1c1814;--beat-ink-2:#5f574a;--beat-ink-3:#948974;--beat-line:rgba(28,24,20,.10);--beat-line-2:rgba(28,24,20,.20)}
+body .beat-root[data-paper="mi"]{--beat-paper:#faf5e9;--beat-paper-2:#f2ead9;--beat-card:#fffefa;--beat-ink:#211d17;--beat-ink-2:#655c4d;--beat-ink-3:#9a8f7b;--beat-line:rgba(33,29,23,.09);--beat-line-2:rgba(33,29,23,.18)}
+body .beat-root[data-paper="hui"]{--beat-paper:#f1f0ec;--beat-paper-2:#e8e6e0;--beat-card:#fbfaf7;--beat-ink:#1b1a17;--beat-ink-2:#5c5a52;--beat-ink-3:#8f8b80;--beat-line:rgba(27,26,23,.09);--beat-line-2:rgba(27,26,23,.18);--beat-primary:#3a566b}
+body .beat-root[data-paper="qing"]{--beat-paper:#edf4f0;--beat-paper-2:#e2ede7;--beat-card:#fbfdfb;--beat-ink:#182420;--beat-ink-2:#4e5f57;--beat-ink-3:#83948b;--beat-line:rgba(24,36,32,.09);--beat-line-2:rgba(24,36,32,.18);--beat-primary:#2f5d54}
+body .beat-root[data-paper="wu"]{--beat-paper:#edf0f5;--beat-paper-2:#e2e7ef;--beat-card:#fbfcfe;--beat-ink:#1a1f26;--beat-ink-2:#525b67;--beat-ink-3:#89929e;--beat-line:rgba(26,31,38,.09);--beat-line-2:rgba(26,31,38,.18);--beat-primary:#3b5876}
+body .beat-root[data-paper="ye"]{--beat-paper:#1e1c18;--beat-paper-2:#26231d;--beat-card:#2b2721;--beat-ink:#f1e9da;--beat-ink-2:#bcb19d;--beat-ink-3:#8d8271;--beat-line:rgba(241,233,218,.10);--beat-line-2:rgba(241,233,218,.20);--beat-primary:#8fb0c8;--beat-red:#e0704f;--beat-jade:#63b79f;--beat-amber:#d9a45a;background-image:none}
+body .beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-color:#c7bda9}
 
 /* 分镜卡的小旗（选中卡右上角） */
 .beat-dec{position:relative}
@@ -1547,7 +1548,7 @@ body[data-ds-dark-theme] .beat-root{
         h('path', { d: 'M12 3l10 18H2L12 3z' }), h('path', { d: 'M12 9v5M12 17.5v.5' }))
     }
 
-    function BeatDecisionDetail({ decision, chapter, total, onClose, returnFocusRef, onRewrite, onChoose, busy, on, transactionBlocked = false }) {
+    function BeatDecisionDetail({ decision, chapter, total, onClose, returnFocusRef, onRewrite, onChoose, busy, on, transactionBlocked = false, embedded = false }) {
       const dialogRef = React.useRef(null)
       React.useEffect(() => {
         dialogRef.current?.focus?.()
@@ -1608,8 +1609,8 @@ body[data-ds-dark-theme] .beat-root{
         ref: dialogRef,
         className: 'beat-detail',
         style: { '--beat-kind': kindTone(decision.kind) },
-        role: 'dialog',
-        'aria-modal': 'true',
+        role: embedded ? 'region' : 'dialog',
+        'aria-modal': embedded ? undefined : 'true',
         'aria-labelledby': 'beat-detail-title',
         tabIndex: -1,
         onKeyDown,
@@ -1619,7 +1620,7 @@ body[data-ds-dark-theme] .beat-root{
           h('div', { className: 'beat-detail-top', key: 'top' }, [
             h('span', { key: 'k' }, `第 ${chapter} 章 · 决策 ${decision.seq}/${total}`),
             h('span', { className: 'beat-spacer', key: 's' }),
-            h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: close, title: '关闭详情', 'aria-label': '关闭详情' }, '×'),
+            embedded ? null : h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: close, title: '关闭详情', 'aria-label': '关闭详情' }, '×'),
           ]),
           h('div', { className: 'beat-detail-title', id: 'beat-detail-title', key: 'title' }, decision.title),
           h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
@@ -1972,9 +1973,9 @@ body[data-ds-dark-theme] .beat-root{
       const [healthChapter, setHealthChapter] = React.useState(null)
       const [search, setSearch] = React.useState({ phase: 'idle', q: '', data: null, error: null })
       const [searchQ, setSearchQ] = React.useState('')
-      const PAPERS = [['xuan', '宣纸'], ['mi', '米白'], ['hui', '灰白'], ['qing', '青瓷'], ['wu', '淡雾'], ['ye', '夜墨']]
+      const PAPERS = [['auto', '跟随'], ['xuan', '宣纸'], ['mi', '米白'], ['hui', '灰白'], ['qing', '青瓷'], ['wu', '淡雾'], ['ye', '夜墨']]
       const [paper, setPaper] = React.useState(() => {
-        try { return localStorage.getItem('dsh-novel-beat:paper') || 'xuan' } catch { return 'xuan' }
+        try { return localStorage.getItem('dsh-novel-beat:paper') || 'auto' } catch { return 'xuan' }
       })
       const [paperOpen, setPaperOpen] = React.useState(false)
       const choosePaper = (name) => {
@@ -2582,6 +2583,7 @@ body[data-ds-dark-theme] .beat-root{
               busy: Boolean(sheet),
               on: data?.on === true,
               transactionBlocked: Boolean(data?.transactionStatus?.blocked),
+              embedded: true,
             }),
           ]))
         }
