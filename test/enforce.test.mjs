@@ -73,6 +73,17 @@ test('evaluateWrite：模式关、非写盘工具、非正文路径 → 一律�
   );
 });
 
+test('evaluateWrite：事务隔离时正文写入被阻止，即使拍板模式已关闭', () => {
+  const verdict = evaluateWrite({
+    toolName: 'write',
+    args: { file_path: `${CWD}\\正文\\第001章.md` },
+    cwd: CWD,
+    state: { on: false, quarantined: true },
+  });
+  assert.equal(verdict.blocked, true);
+  assert.equal(verdict.detail.code, DENY.BOOK_QUARANTINED);
+});
+
 test('evaluateWrite：一章还没登记任何决策 → 放行（正在写开场）', () => {
   const verdict = evaluateWrite({
     toolName: 'write',

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { emptyBook } from '../lib/schema.js';
+import { emptyBook, computeLedgerHash } from '../lib/schema.js';
 import { bookDir, bookFilePath, computeRevision, mutateBookData, readBookData } from '../lib/store.js';
 import {
   executeAdjust,
@@ -100,6 +100,7 @@ test('legacy array counts remain readable and the next write persists the next r
     { id: 'r-0002', kind: 'adjust' },
   ];
   data.audit = [{ action: 'one' }, { action: 'two' }, { action: 'three' }];
+  data.integrity.ledgerHash = computeLedgerHash(data);
   await writeFile(bookFilePath(dir, BOOK), JSON.stringify(data), 'utf8');
 
   const first = await readBookData(dir, BOOK);
@@ -121,6 +122,7 @@ test('legacy first write counts the pre-mutation baseline, not the entries it ad
   delete data.revision;
   data.revisions = [{ id: 'r-0001', kind: 'adjust' }, { id: 'r-0002', kind: 'adjust' }];
   data.audit = [{ action: 'one' }, { action: 'two' }, { action: 'three' }];
+  data.integrity.ledgerHash = computeLedgerHash(data);
   await writeFile(bookFilePath(dir, BOOK), JSON.stringify(data), 'utf8');
 
   const written = await mutateBookData(dir, BOOK, (book) => {
@@ -156,7 +158,7 @@ test('0.6→0.7 迁移写盘时初始化 revision（不 +1、不跳号）', asyn
   await writeFile(bookFilePath(dir, BOOK), JSON.stringify(v1), 'utf8');
 
   const { data } = await readBookData(dir, BOOK);
-  assert.equal(data.schemaVersion, 2);
+  assert.equal(data.schemaVersion, 3);
   assert.equal(typeof data.revision, 'number', '迁移后必须落一个整数 revision');
   assert.equal(data.revision, computeRevision(data), '迁移只初始化，不 +1');
   const onDisk = JSON.parse(await readFile(bookFilePath(dir, BOOK), 'utf8'));

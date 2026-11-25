@@ -340,10 +340,13 @@ test('executeRewind 无锚点：拒绝且正文不动', async (t) => {
   assert.equal(await readFile(file, 'utf8'), before)
 })
 
-test('executeRewind markLaterStale：后续章节只加待复核标记，不动正文', async (t) => {
+test('executeRewind 成功后：后续章节只加待复核标记，不动正文', async (t) => {
   const { dir } = await fixtureDir(t)
+  const laterFile = join(dir, '正文', '第11章.md')
+  await writeFile(laterFile, '后续章节正文，不得被回退触碰。', 'utf8')
+  const laterBodyHash = sha256(await readFile(laterFile, 'utf8'))
   const result = await executeRewind({
-    dir, book: BOOK, decisionId: 'b10-2', choice: 'keep', confirm: true, markLaterStale: true,
+    dir, book: BOOK, decisionId: 'b10-2', choice: 'keep', confirm: true,
   })
   assert.equal(result.ok, true)
   const { data } = await readBookData(dir, BOOK)
@@ -351,6 +354,7 @@ test('executeRewind markLaterStale：后续章节只加待复核标记，不动�
   assert.match(data.chapters['11'].stale.reason, /第 10 章回退了/)
   assert.equal(data.decisions.find((decision) => decision.id === 'b11-1').status, 'proposed')
   assert.equal((await readFile(join(dir, FILE), 'utf8')).length, 833)
+  assert.equal(sha256(await readFile(laterFile, 'utf8')), laterBodyHash)
 })
 
 test('executeRewind 正文已截断但后续失败：正文恢复原样', async (t) => {

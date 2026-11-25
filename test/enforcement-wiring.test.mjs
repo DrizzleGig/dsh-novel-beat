@@ -1,10 +1,11 @@
 // 0.7.0 三层强制接线测试：guard / 系统提示 / 技能，全部走假 ctx（不需要真宿主）
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, mkdir } from 'node:fs/promises';
+import { mkdtemp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { apply } from '../index.js';
+import { hashText } from '../lib/decision-gate.js';
 
 async function tempDir(t) {
   const dir = await mkdtemp(join(tmpdir(), 'novel-beat-wire-'));
@@ -69,6 +70,12 @@ function fakeHost(dir) {
 async function planOneBeat(h, dir, chapter = 1) {
   const plan = h.tools.get('beat_plan');
   assert.ok(plan, 'beat_plan 已注册');
+  const context = '林昭还没有表明立场。';
+  await writeFile(join(dir, '起点.md'), context);
+  const evidence = [{ kind: 'outline', file: '起点.md', quote: context,
+    hash: hashText(context), offsetStart: 0, offsetEnd: context.length }];
+  const delta = { entity: 'person:linzhao', key: 'relationship.stance', from: 'neutral', to: 'rescue', evidence };
+  const claim = (text) => ({ text, basis: 'inference', sourceRefs: evidence });
   const result = await plan.execute({
     dir,
     book: '书',
@@ -78,16 +85,21 @@ async function planOneBeat(h, dir, chapter = 1) {
         title: '要不要救',
         kind: '分叉',
         change: '林昭 从 旁观 变成 出手相救',
+        gate: { ...delta, reason: '这次选择会决定林昭与对方的关系', confidence: 0.9 },
         options: [
           {
             label: '出手',
             impact: '欠下人情，卷进主线',
-            changes: [{ entity: '林昭', key: '立场', from: '旁观', to: '出手', evidence: ['林昭冲了上去'] }],
+            action: '出手救下对方', costs: ['暴露自己的立场'],
+            outcomes: [claim('卷入双方的争执')], informationGain: [], risks: [claim('可能受伤')],
+            changes: [delta],
           },
           {
             label: '旁观',
             impact: '保住低调，错过线索',
-            changes: [{ entity: '林昭', key: '立场', from: '旁观', to: '继续观望', evidence: ['林昭没有动'] }],
+            action: '明确拒绝帮助并离开', costs: ['错过追问线索的机会'],
+            outcomes: [claim('对方失去支援')], informationGain: [], risks: [claim('被对方视为敌人')],
+            changes: [{ ...delta, to: 'refuse' }],
           },
         ],
       },
@@ -132,7 +144,7 @@ test('三层接线：/beat on 后 guard 拦写正文、off 后放行', async (t)
 
   // 刚拍完板、还没登记段落：放行（正在写这一段）
   const decide = h.tools.get('beat_decide');
-  await decide.execute({ dir, book: '书', chapter: 1, id: 'b1-1', choice: '出手' });
+  await decide.execute({ dir, book: '书', chapter: 1, id: planned.ids[0], choice: '出手' });
   await h.emit('tools/result', { name: 'beat_decide', agent: h.agent });
   assert.equal(call(bodyFile), undefined, '拍板后正在写这一段，不该拦');
 

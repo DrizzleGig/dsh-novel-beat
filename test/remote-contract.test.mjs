@@ -2,10 +2,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { DESCRIPTORS, TYPERT_REMOTE } from '../lib/remote-contract.js'
 import { registerHooks } from 'node:module'
-import { mkdtemp, mkdir, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
+import { access, mkdtemp, mkdir, readFile, readdir, rm, stat, utimes, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { emptyBook } from '../lib/schema.js'
+import { computeLedgerHash, emptyBook } from '../lib/schema.js'
+import { executeNext, executePlan, executeSegment } from '../lib/tools.js'
+import { hashText } from '../lib/decision-gate.js'
+import { setSessionMode } from '../lib/store.js'
 
 // 仅替换两个宿主依赖；运行真实 BeatRemote、选书逻辑及磁盘读取。
 const hostModules = new Map([
@@ -48,6 +51,7 @@ async function searchRemote(t) {
     data.revision = 31
     data.decisions.push({ id: 'b-1', chapter: 2, title, status: 'proposed', chosen: null })
     data.canon.push({ entity: '陈凡', key: '去向', value: '东宫', chapter: 2 })
+    data.integrity.ledgerHash = computeLedgerHash(data)
     const directory = join(dir, '.dsh-novel-beat', book)
     await mkdir(directory, { recursive: true })
     const file = join(directory, 'book.json')
@@ -56,6 +60,49 @@ async function searchRemote(t) {
     return file
   }
   return { dir, remote, registration, putBook, id: agent.id }
+}
+
+async function decisionRemote(t, voice = null) {
+  const dir = await mkdtemp(join(tmpdir(), 'beat-decision-remote-'))
+  t.after(() => rm(dir, { recursive: true, force: true }))
+  const agent = { id: 'session-decision' }
+  const book = 'remote-decision'
+  const file = '正文/第一章.md'
+  const start = '深夜。\n林青还不知道密令。\n'
+  const resultText = '林青获知密令，决定动身。\n'
+  await mkdir(join(dir, '正文'))
+  await writeFile(join(dir, file), start)
+  const quote = '林青还不知道密令'
+  const ref = {
+    kind: 'body', file, hash: hashText(start), quote,
+    offsetStart: start.indexOf(quote), offsetEnd: start.indexOf(quote) + quote.length,
+  }
+  const delta = { entity: 'person:linqing', key: 'knowledge.awareness', from: 'unknown', to: 'aware', evidence: [ref] }
+  const claim = (text) => ({ text, basis: 'inference', sourceRefs: [ref] })
+  const first = {
+    label: '立即告知', action: '现在向林青传达密令', costs: ['承担泄密风险'],
+    outcomes: [claim('林青能够参与行动')], informationGain: [claim('林青得到密令内容')],
+    risks: [claim('行动可能暴露')], changes: [delta],
+  }
+  const second = {
+    label: '暂缓说明', action: '先观察，只告诉一人', costs: ['独自承担压力'],
+    outcomes: [claim('暂时保密')], informationGain: [claim('观察对方是否守约')],
+    risks: [claim('疑心可能累积')], changes: [{ ...delta, to: 'waiting' }],
+  }
+  const beat = {
+    title: '林青何时得到密令', kind: '知情', change: '由作者决定是否立即告诉林青',
+    gate: { ...delta, reason: '不问就会替作者决定谁先知情', confidence: 0.9 },
+    options: [first, second],
+  }
+  const planned = await executePlan({ dir, book, chapter: 1, beats: [beat] }, { requireGate: true })
+  const remote = new BeatRemote({
+    agents: { get: (id) => id === agent.id ? agent : null },
+    workingDirectory: { ensure: async (resolved) => { assert.equal(resolved, agent); return dir } },
+    commands: { execute: () => assert.fail('本测试不执行宿主命令') },
+    typert: { register() {} },
+    get(name) { return name === 'novelVoice' ? voice : null },
+  })
+  return { dir, book, file, start, resultText, quote, id: planned.ids[0], agent, remote }
 }
 
 test('remote contract 暴露 v0.8 的 overview / chapter，并保留 v0.7 方法', () => {
@@ -122,6 +169,76 @@ test('search contract：sessionId + JSON options，返回 object，Host decorato
   assert.ok(decorated.some(([name, method]) => name === 'search' && method === 'search'))
 })
 
+test('remote.chapter 只读接 voice 文风排序，接口缺少本会话开关时回到基线', async (t) => {
+  const voice = {
+    identity: () => ({ readOnly: true, capabilities: ['voice.brief', 'voice.status', 'voice.revision'] }),
+    isEnabled: async () => true,
+    getStatus: async () => ({ profiles: [{ id: 'confirmed', version: '2.4', status: 'confirmed' }] }),
+    getBrief: async ({ profileId }) => ({
+      ok: true,
+      markdown: '【总则】表达克制，适当留白。\n【写法】不直说。',
+      revision: 17,
+      sources: { profileId, profileVersion: '2.4', status: 'confirmed' },
+    }),
+  }
+  const connected = await decisionRemote(t, voice)
+  const chapter = await connected.remote.chapter(connected.agent.id, 1)
+  const decision = chapter.decisions[0]
+  assert.equal(chapter.voiceFit.available, true)
+  assert.equal(chapter.voiceFit.profileVersion, '2.4')
+  assert.deepEqual(decision.options.map((option) => option.label), ['暂缓说明', '立即告知'])
+  assert.ok(decision.options.every((option) => option.styleFit?.advisory === true))
+
+  let briefCalls = 0
+  const currentPublishedVoice = {
+    ...voice,
+    isEnabled: undefined,
+    getBrief: async (...args) => { briefCalls += 1; return voice.getBrief(...args) },
+  }
+  const unavailable = await decisionRemote(t, currentPublishedVoice)
+  const fallback = await unavailable.remote.chapter(unavailable.agent.id, 1)
+  assert.equal(fallback.voiceFit.available, false)
+  assert.equal(fallback.voiceFit.reason, 'enabled-state-unavailable')
+  assert.match(fallback.voiceFit.message, /本会话开关状态/u)
+  assert.deepEqual(fallback.decisions[0].options.map((option) => option.label), ['立即告知', '暂缓说明'])
+  assert.equal(briefCalls, 0, '开关状态未知时不得读取文风简报')
+  assert.deepEqual(decision.gate, fallback.decisions[0].gate)
+  for (const option of decision.options) {
+    const baseline = fallback.decisions[0].options.find((entry) => entry.label === option.label)
+    assert.deepEqual(option.changes, baseline.changes)
+    assert.deepEqual(option.risks, baseline.risks)
+  }
+})
+
+test('remote.chapter 标失效证据；impact 与 rewind 拒绝提交，隔离态错误可读', async (t) => {
+  const fixture = await decisionRemote(t)
+  const { dir, book, file, start, resultText, quote, id, agent, remote } = fixture
+  await executeNext({ dir, book, chapter: 1 }, { agent: { id: agent.id } }, {
+    ask: async ({ questions }) => ({ answers: questions.map(({ id: questionId }) => ({ id: questionId, selected: ['立即告知'] })) }),
+  })
+  await writeFile(join(dir, file), start + resultText)
+  await executeSegment({ dir, book, chapter: 1, file, decisionIds: [id], excerpt: resultText })
+  await setSessionMode(dir, agent.id, 'on')
+
+  const ledgerFile = join(dir, '.dsh-novel-beat', book, 'book.json')
+  const ledgerBefore = await readFile(ledgerFile)
+  const changedBody = (await readFile(join(dir, file), 'utf8')).replace(quote, '林青早已知道密令')
+  await writeFile(join(dir, file), changedBody)
+
+  const chapter = await remote.chapter(agent.id, 1)
+  assert.equal(chapter.decisions[0].evidenceStatus.valid, false)
+  assert.equal(chapter.decisions[0].canRevert, false)
+  assert.equal(chapter.decisions[0].revertBlockedReason, 'stale-evidence')
+  assert.equal((await remote.impact(agent.id, id, { choice: '暂缓说明' })).code, 'stale-evidence')
+  await assert.rejects(remote.rewind(agent.id, id, { choice: '暂缓说明', confirm: true }), { code: 'stale-evidence' })
+  assert.deepEqual(await readFile(ledgerFile), ledgerBefore)
+  await assert.rejects(access(join(dir, '.dsh-novel-beat', book, 'transactions')), { code: 'ENOENT' })
+
+  await writeFile(join(dir, '.dsh-novel-beat', book, 'quarantine.json'), JSON.stringify({ txId: 'tx-isolated', reason: '恢复校验失败' }))
+  assert.equal((await remote.impact(agent.id, id, { choice: 'keep' })).code, 'book-quarantined')
+  assert.equal((await remote.rewind(agent.id, id, { choice: 'keep', confirm: true })).code, 'book-quarantined')
+})
+
 test('search remote：拒绝错误 options 与字段类型，chapter 沿用远程接口约束', async (t) => {
   const { remote, id } = await searchRemote(t)
   for (const options of [null, [], '陈凡', 1, true, { q: 2 }, { q: null }, { entity: [] }, { status: false }, { limit: '5' }, { limit: NaN }, { limit: Infinity }]) {
@@ -171,6 +288,8 @@ test('search remote：v1 旧账只在内存兼容，重复搜索不迁移落盘�
   delete data.revisions
   delete data.requests
   delete data.tasks
+  delete data.transactions
+  delete data.integrity
   data.decisions[0] = { id: 'old-1', chapter: 2, title: '陈凡旧拍板', status: 'decided', chosen: { label: '前往东宫' }, decidedAt: data.createdAt }
   await writeFile(file, JSON.stringify(data), 'utf8')
   const before = { text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }
@@ -180,4 +299,36 @@ test('search remote：v1 旧账只在内存兼容，重复搜索不迁移落盘�
   assert.deepEqual(first, await remote.search(id, { q: '东宫' }))
   assert.deepEqual({ text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }, before)
   assert.deepEqual(await readdir(join(dir, '.dsh-novel-beat', '旧账')), ['book.json'])
+})
+
+test('search remote：v2 旧账内存升级后稳定可搜，不写盘或生成备份', async (t) => {
+  const { dir, remote, putBook, id } = await searchRemote(t)
+  const file = await putBook('旧二版账', '陈凡前往东宫', '2026-11-18T00:00:00Z')
+  const data = JSON.parse(await readFile(file, 'utf8'))
+  data.schemaVersion = 2
+  delete data.transactions
+  delete data.integrity
+  await writeFile(file, JSON.stringify(data), 'utf8')
+  const before = { text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }
+  const first = await remote.search(id, { q: '东宫' })
+  assert.equal(first.ok, true)
+  assert.equal(first.revision, 31)
+  assert.equal(first.total, 2)
+  assert.deepEqual(first, await remote.search(id, { q: '东宫' }))
+  assert.deepEqual({ text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }, before)
+  assert.deepEqual(await readdir(join(dir, '.dsh-novel-beat', '旧二版账')), ['book.json'])
+})
+
+test('search remote：拒绝 v3 内容与账本 hash 不符，沿用 no-book 封装且不写盘', async (t) => {
+  const { dir, remote, putBook, id } = await searchRemote(t)
+  const file = await putBook('损坏账', '陈凡前往东宫', '2026-11-18T00:00:00Z')
+  const data = JSON.parse(await readFile(file, 'utf8'))
+  data.canon[0].value = '未经记账修改的西宫'
+  await writeFile(file, JSON.stringify(data), 'utf8')
+  const before = { text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }
+  const result = await remote.search(id, { q: '西宫' })
+  assert.equal(result.ok, false)
+  assert.equal(result.code, 'no-book')
+  assert.deepEqual({ text: await readFile(file, 'utf8'), mtime: (await stat(file)).mtimeMs }, before)
+  assert.deepEqual(await readdir(join(dir, '.dsh-novel-beat', '损坏账')), ['book.json'])
 })

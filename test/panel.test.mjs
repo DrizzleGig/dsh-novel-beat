@@ -179,6 +179,59 @@ test('chapter 详情：选项、canRevert、级联影响与 canon 归属', () =>
   assert.equal(ch9.decisions[0].segment, null)
 })
 
+test('0.10.2 决策投影包含状态前后值、EvidenceRef、六要素与独立拒收候选', () => {
+  const data = fixture()
+  const decision = data.decisions.find((entry) => entry.id === 'b10-2')
+  const ref = { kind: 'body', file: FILE, offsetStart: 20, offsetEnd: 25, quote: '密令。', hash: 'a'.repeat(64), sourceLength: 100 }
+  decision.gate = {
+    entity: 'person:hero', entityLabel: '主角', key: 'identity.exposure', keyLabel: '身份暴露',
+    from: 'unknown', fromLabel: '无人知晓', to: 'private', toLabel: '只告知同伴',
+    reason: '此處不問就會替作者決定秘密由誰知曉。', evidence: [ref], confidence: 0.9,
+  }
+  decision.sourceRefs = [ref]
+  decision.options[0] = {
+    ...decision.options[0], action: '单独说明', costs: ['承担保密义务'],
+    outcomes: [{ text: '获得同伴协助', basis: 'inference', sourceRefs: [ref] }],
+    informationGain: [{ text: '确认同伴态度', basis: 'inference', sourceRefs: [ref] }],
+    risks: [{ text: '消息可能外泄', basis: 'inference', sourceRefs: [ref] }],
+    changes: [{ entity: 'person:hero', key: 'identity.exposure', from: 'unknown', fromLabel: '无人知晓', to: 'private', toLabel: '只告知同伴', evidence: [ref] }],
+  }
+  const inputBefore = structuredClone(data)
+  const model = buildChapter({
+    book: BOOK,
+    data,
+    chapter: 10,
+    evidenceStatus: { 'b10-2': { status: 'invalid', valid: false, code: 'stale-evidence', message: 'hash changed' } },
+    rejectedCandidates: [{ id: 'reject-1', title: '同一差分改写', reason: '与现有选项差分相同。', options: [{ label: '说出来' }] }],
+  })
+  const projected = model.decisions.find((entry) => entry.id === 'b10-2')
+  assert.deepEqual(projected.gate.evidence[0], {
+    kind: 'body', file: FILE, offsetStart: 20, offsetEnd: 25, quote: '密令。', hash: 'a'.repeat(64),
+  })
+  assert.equal(projected.gate.from, 'unknown')
+  assert.equal(projected.gate.to, 'private')
+  assert.equal(projected.evidenceStatus.valid, false)
+  assert.equal(projected.canCommit, false)
+  assert.equal(projected.canRevert, false)
+  assert.equal(projected.revertBlockedReason, 'stale-evidence')
+  assert.deepEqual(projected.options[0].costs, ['承担保密义务'])
+  assert.equal(projected.options[0].outcomes[0].sourceRefs[0].quote, '密令。')
+  assert.equal(projected.options[0].changes[0].fromLabel, '无人知晓')
+  assert.equal(model.rejectedCandidates[0].reason, '与现有选项差分相同。')
+  assert.equal(projected.options.some((option) => option.label === '说出来'), false)
+  assert.deepEqual(data, inputBefore, 'panel 投影不得修改账本输入')
+})
+
+test('overview 投影可展示只读事务状态', () => {
+  const transactionStatus = {
+    blocked: true, quarantined: true, currentRevision: 49,
+    latest: { txId: 'tx-example', stage: 'quarantined', beforeRevision: 48, afterRevision: 49 },
+  }
+  const result = buildOverview({ book: BOOK, data: fixture(), transactionStatus })
+  assert.deepEqual(result.transactionStatus, transactionStatus)
+  assert.equal(result.ledgerHash, null)
+})
+
 test('latestReopenRevision 找到目标决策最近一次回退快照', () => {
   const data = fixture()
   data.revisions = [

@@ -350,14 +350,14 @@ test('beat_verify：段落被改过会报 drift，没登记的正文会报 unseg
   assert.ok(drifted.warnings.some((entry) => entry.startsWith(`drift:${segment.id}:`)));
 });
 
-test('beat_verify：一章正文一条决策都没有时拒绝盖章（NO_TASK）', async (t) => {
+test('beat_verify：零决策章缺少扫描收据时拒绝盖章（scan-required）', async (t) => {
   const dir = await workspace(t);
   await writeFile(join(dir, FILE), '整章闷头写完。\n', 'utf8');
   await executePlan({ dir, book: BOOK, chapter: 2, beats: [beat('别的章', '别的', '无', '有')] });
 
   await assert.rejects(
     () => executeVerify({ dir, book: BOOK, chapter: 1, path: FILE, strict: false }),
-    (error) => error.code === 'NO_TASK',
+    (error) => error.code === 'scan-required',
   );
 });
 

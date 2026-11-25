@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, stat, utimes, writeFile } from '
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { apply, gateFromBook } from '../index.js';
-import { emptyBook, validateBook } from '../lib/schema.js';
+import { computeLedgerHash, emptyBook, validateBook } from '../lib/schema.js';
 import { computeRevision } from '../lib/store.js';
 import { evaluateWrite } from '../lib/enforce.js';
 
@@ -42,6 +42,7 @@ async function fixture(t, configure = () => {}) {
   const data = emptyBook({ book: BOOK, now: AT });
   data.revision = 17;
   configure(data);
+  data.integrity.ledgerHash = computeLedgerHash(data);
   validateBook(data);
   await mkdir(directory, { recursive: true });
   await writeFile(file, `${JSON.stringify(data, null, 2)}\n`, 'utf8');
@@ -157,7 +158,7 @@ test('M2 getRevision：整数账本版本与最后 revision id 分离，子目�
   assert.equal(computeRevision(data), 17);
 });
 
-test('M2 getRevision：旧 v2 没有 revision 时沿用 M1 的 audit + revisions 计算', async (t) => {
+test('M2 getRevision：没有 revision 时沿用 M1 的 audit + revisions 计算', async (t) => {
   const { dir, service } = await fixture(t, (data) => {
     artifactData(data);
     delete data.revision;
@@ -306,7 +307,7 @@ test('M2 getCanon：保留全书 canon、只列未回收义务，决策按章投
     }
   });
   assert.deepEqual(await service.getCanon({ cwd: dir, chapter: 1 }), {
-    schemaVersion: 2, revision: 17,
+    schemaVersion: 3, revision: 17,
     canon: [
       { entity: '林昭', key: '所在地', value: '城外', chapter: 2 },
       { entity: '玉佩', key: '颜色', value: '青色', chapter: null },
@@ -371,12 +372,15 @@ test('M2 getArtifact：同 id 按 segment → decision → revision → rewind �
   assert.equal((await service.getArtifact({ cwd: dir, artifactId: 'shared' })).kind, 'segment');
   data.segments = [];
   data.revisions[0].segmentId = null;
+  data.integrity.ledgerHash = computeLedgerHash(data);
   await writeFile(file, JSON.stringify(validateBook(data)), 'utf8');
   assert.equal((await service.getArtifact({ cwd: dir, artifactId: 'shared' })).kind, 'decision');
   data.decisions = [];
+  data.integrity.ledgerHash = computeLedgerHash(data);
   await writeFile(file, JSON.stringify(validateBook(data)), 'utf8');
   assert.equal((await service.getArtifact({ cwd: dir, artifactId: 'shared' })).kind, 'revision');
   data.revisions = [];
+  data.integrity.ledgerHash = computeLedgerHash(data);
   await writeFile(file, JSON.stringify(validateBook(data)), 'utf8');
   assert.equal((await service.getArtifact({ cwd: dir, artifactId: 'shared' })).kind, 'rewind');
 });
@@ -399,7 +403,7 @@ test('M2 query：仅新增 schemaVersion/revision，旧字段、筛选与记录�
   });
   const result = await service.query({ cwd: dir, chapter: 1 });
   assert.deepEqual(result, {
-    book: BOOK, version: 2, schemaVersion: 2, revision: 17, chapter: 1,
+    book: BOOK, version: 3, schemaVersion: 3, revision: 17, chapter: 1,
     decisions: [{ id: 'b-1', chapter: 1, title: '是否救人', status: 'committed', choice: '救人', segmentId: 's-1' }],
     canon: [],
     obligations: [{ id: 'o-paid', text: '已完成', status: 'paid', dueChapter: 1, sourceDecision: null }],
@@ -414,6 +418,7 @@ test('M2 自动选书与显式指定：最近修改书为默认，显式书独�
   const { dir, file, service } = await fixture(t);
   const other = emptyBook({ book: '另一本', now: AT });
   other.revision = 29;
+  other.integrity.ledgerHash = computeLedgerHash(other);
   const otherDirectory = join(dir, '.dsh-novel-beat', other.book);
   await mkdir(otherDirectory);
   const otherFile = join(otherDirectory, 'book.json');
@@ -456,6 +461,8 @@ test('M2 五件套只读旧 v1：内存迁移结果稳定，不生成 bak 或重
   delete data.revisions;
   delete data.requests;
   delete data.tasks;
+  delete data.transactions;
+  delete data.integrity;
   data.decisions = [{ id: 'old-1', chapter: 1, title: '旧拍板', status: 'decided', chosen: { label: '救人' }, decidedAt: AT }];
   data.chapters = { 1: { decisionIds: ['old-1'], verifiedAt: AT } };
   await writeFile(file, JSON.stringify(data), 'utf8');
@@ -466,5 +473,42 @@ test('M2 五件套只读旧 v1：内存迁移结果稳定，不生成 bak 或重
   assert.equal((await service.getStatus({ cwd: dir })).chapter, 1);
   assert.equal((await service.getCanon({ cwd: dir })).decisions[0].status, 'committed');
   assert.equal((await service.getArtifact({ cwd: dir, artifactId: 'old-1' })).found, true);
+  assert.deepEqual(await treeSnapshot(dir), before);
+});
+
+test('M2 五件套只读旧 v2：内存升级到 v3，重复读取不写盘或生成备份', async (t) => {
+  const { dir, file, data, service } = await fixture(t, artifactData);
+  data.schemaVersion = 2;
+  delete data.transactions;
+  delete data.integrity;
+  await writeFile(file, JSON.stringify(data), 'utf8');
+  const before = await treeSnapshot(dir);
+  const args = { cwd: dir, book: BOOK, chapter: 1 };
+  const first = await Promise.all([
+    service.getRevision(args), service.getStatus(args), service.getCanon(args),
+    service.getArtifact({ ...args, artifactId: 'b-1' }),
+  ]);
+  assert.equal(first[0].revision, 17);
+  assert.equal(first[1].chapter, 1);
+  assert.equal(first[2].schemaVersion, 3);
+  assert.equal(first[2].decisions[0].status, 'committed');
+  assert.equal(first[3].found, true);
+  assert.deepEqual(await Promise.all([
+    service.getRevision(args), service.getStatus(args), service.getCanon(args),
+    service.getArtifact({ ...args, artifactId: 'b-1' }),
+  ]), first);
+  assert.deepEqual(await treeSnapshot(dir), before);
+});
+
+test('M2 v3 账本 hash 被破坏时拒绝读取，保留原内容与文件集合', async (t) => {
+  const { dir, file, data, service } = await fixture(t, artifactData);
+  data.decisions[0].title = '未经记账修改的标题';
+  await writeFile(file, JSON.stringify(data), 'utf8');
+  const before = await treeSnapshot(dir);
+  const args = { cwd: dir, book: BOOK, chapter: 1 };
+  for (const name of ['getRevision', 'getStatus', 'getCanon']) {
+    assert.equal(await service[name](args), null);
+  }
+  assert.deepEqual(await service.getArtifact({ ...args, artifactId: 'b-1' }), { found: false, artifactId: 'b-1' });
   assert.deepEqual(await treeSnapshot(dir), before);
 });

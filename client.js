@@ -133,9 +133,22 @@ window.__ModuleLoader__.load({
 
     function unwrap(result) {
       if (result && result.ok === false) {
-        throw new Error(result.error?.message ?? result.message ?? 'remote 调用失败')
+        const error = new Error(result.error?.message ?? result.message ?? 'remote 调用失败')
+        error.code = result.error?.code ?? result.code ?? null
+        error.details = result.error?.details ?? result.details ?? null
+        throw error
       }
       return result && result.ok === true ? result.value : result
+    }
+
+    function requireBusinessOk(value) {
+      if (value?.ok === false) {
+        const error = new Error(value.message ?? value.code ?? '操作失败')
+        error.code = value.code ?? null
+        error.details = value
+        throw error
+      }
+      return value
     }
 
     function BeatModeButton({ sessionId, remote }) {
@@ -405,6 +418,37 @@ window.__ModuleLoader__.load({
 .beat-detail-close:hover{background:var(--beat-layer2);color:var(--beat-text)}
 .beat-detail-title{font-size:12px;font-weight:600;margin-top:4px;line-height:1.35}
 .beat-detail-change{font-size:10px;color:var(--beat-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.beat-gate{margin-top:6px;padding:6px;border:1px solid var(--beat-brand-line);border-radius:5px;background:var(--beat-brand-soft);font-size:9.5px;line-height:1.45;overflow-wrap:anywhere}
+.beat-gate-title{font-weight:600;color:var(--beat-text)}
+.beat-gate-delta{margin-top:2px;color:var(--beat-text);font-family:var(--beat-mono)}
+.beat-gate-reason{margin-top:3px;color:var(--beat-muted)}
+.beat-evidence-list{margin-top:4px}
+.beat-evidence-status{font-size:8.5px;color:var(--beat-ok-ink);margin:3px 0}
+.beat-evidence-status[data-invalid="1"]{color:var(--beat-danger-ink);font-weight:600}
+.beat-evidence{margin-top:2px;border:1px solid var(--beat-line);border-radius:4px;padding:3px 5px;background:var(--beat-layer1);font-size:8.5px;overflow-wrap:anywhere}
+.beat-evidence summary{cursor:pointer;color:var(--beat-muted)}
+.beat-evidence blockquote{margin:4px 0;color:var(--beat-text);line-height:1.5;white-space:pre-wrap}
+.beat-evidence code{font-size:7.5px;color:var(--beat-faint);overflow-wrap:anywhere}
+.beat-opt-heading{display:flex;justify-content:space-between;gap:4px;align-items:flex-start;flex-wrap:wrap}
+.beat-opt-heading b{font-weight:600;color:var(--beat-text)}
+.beat-style-fit{font-size:7.5px;padding:1px 4px;border-radius:4px;color:var(--beat-brand-ink);background:var(--beat-brand-soft);border:1px solid var(--beat-brand-line);white-space:nowrap}
+.beat-opt-field{margin-top:2px;color:var(--beat-muted);white-space:normal;overflow-wrap:anywhere}
+.beat-opt-delta{font-family:var(--beat-mono);font-size:8.5px;color:var(--beat-text)}
+.beat-style-why{margin-top:3px;color:var(--beat-faint);font-size:8px;line-height:1.4}
+.beat-voice-status{margin:5px 1px;padding:5px 6px;border:1px solid var(--beat-line);border-radius:5px;background:var(--beat-layer1);font-size:8.5px;line-height:1.45;color:var(--beat-faint);overflow-wrap:anywhere}
+.beat-voice-status b{display:block;color:var(--beat-muted);font-weight:600}
+.beat-voice-status[data-available="1"]{border-color:var(--beat-brand-line)}
+.beat-rejected{margin:6px 2px;padding:7px;border:1px dashed var(--beat-line-2);border-radius:6px;background:var(--beat-layer1);opacity:.72;font-size:9px;line-height:1.45;overflow-wrap:anywhere}
+.beat-rejected-title{color:var(--beat-muted);font-weight:600}
+.beat-rejected-options{margin-top:2px;color:var(--beat-faint);text-decoration:line-through}
+.beat-rejected-reason{margin-top:3px;color:var(--beat-warn-ink)}
+.beat-rejected-note{margin-top:2px;color:var(--beat-faint);font-size:8px}
+.beat-quarantine{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:7px 12px;padding:7px;border:1px solid var(--beat-danger-line);border-radius:6px;background:var(--beat-danger-soft);color:var(--beat-danger-ink);font-size:9px;line-height:1.45;overflow-wrap:anywhere}
+.beat-quarantine b{font-weight:700}
+.beat-quarantine span{flex:1;min-width:140px}
+.beat-quarantine button,.beat-sheet-error-actions button{min-height:24px;padding:2px 7px;border:1px solid var(--beat-danger-line);border-radius:4px;background:transparent;color:inherit;font:inherit;cursor:pointer}
+.beat-sheet-error b{display:block;margin-bottom:2px}
+.beat-sheet-error-actions{display:flex;gap:5px;margin-top:4px}
 .beat-cur{margin-top:6px;border:1px solid var(--beat-brand-line);border-radius:6px;background:linear-gradient(135deg,rgba(125,149,251,.1),rgba(167,139,250,.04));padding:5px 7px;display:flex;align-items:center;gap:6px}
 .beat-cur-mark{width:14px;height:14px;border-radius:50%;background:var(--beat-brand);color:var(--beat-on-accent);display:flex;align-items:center;justify-content:center;font-size:9px;flex:none}
 .beat-cur-grow{flex:1;min-width:0}
@@ -641,6 +685,7 @@ body[data-ds-dark-theme] .beat-root{
 .beat-detail-close:hover{background:var(--beat-paper-2);color:var(--beat-ink)}
 .beat-detail-title{font-size:13.5px;font-weight:600;margin:5px 32px 2px 0;line-height:1.35}
 .beat-detail-change{font-size:10px;color:var(--beat-ink-2);margin-top:1px;line-height:1.5;white-space:normal}
+.beat-detail :focus-visible,.beat-sheet :focus-visible,.beat-dec:focus-visible{outline:2px solid var(--beat-red);outline-offset:2px}
 .beat-cur{margin-top:9px;border:1px solid var(--beat-jade-line);border-radius:7px;background:var(--beat-jade-soft);padding:7px 9px;display:flex;align-items:center;gap:8px}
 .beat-cur-mark{width:16px;height:16px;border-radius:50%;background:var(--beat-jade);color:var(--beat-paper);display:flex;align-items:center;justify-content:center;font-size:9px;flex:none}
 .beat-cur-grow{flex:1;min-width:0}.beat-cur-k{font-size:8.5px;color:var(--beat-ink-3)}
@@ -742,6 +787,134 @@ body[data-ds-dark-theme] .beat-root{
 .beat-hl-ok span{display:block;font-size:9.5px;color:var(--beat-ink-2);margin-top:2px}
 .beat-hl-note{margin-top:10px;padding:7px 8px;border:1px dashed var(--beat-line-2);border-radius:6px;color:var(--beat-ink-2);font-size:9.5px}
 .beat-hl-foot{margin-top:12px;color:var(--beat-ink-3);font:9px var(--beat-mono);text-align:center}
+/* compact editorial ledger */
+.beat-root{
+  --beat-amber:#797266;--beat-amber-soft:rgba(121,114,102,.08);--beat-amber-line:rgba(121,114,102,.22);
+  --beat-grad:var(--beat-red);--beat-brand-2:var(--beat-ink-3);
+  max-width:100%;min-width:0;overflow:hidden
+}
+body[data-ds-dark-theme] .beat-root{
+  --beat-amber:#918a7f;--beat-amber-soft:rgba(145,138,127,.10);--beat-amber-line:rgba(145,138,127,.24);
+  --beat-on-accent:#fbf9f4
+}
+.beat-head{padding:7px 12px 0}
+.beat-eyes{margin-top:4px;gap:9px}
+.beat-book{font-family:"Songti SC","STSong","SimSun",serif;font-size:14px;font-weight:600}
+.beat-sub{margin-top:2px;font-size:9.5px}
+.beat-ring{width:auto;height:auto;align-self:flex-end;padding:0 0 2px}
+.beat-ring svg{display:none}
+.beat-ring .ctr{position:static;display:flex;flex-direction:row;align-items:baseline;gap:2px;line-height:1}
+.beat-ring .ctr b{font-size:10px;color:var(--beat-ink-2);font-weight:500}
+.beat-ring .ctr span{font-size:9px;color:var(--beat-ink-3);margin:0}
+.beat-stats{height:26px;margin-top:7px;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line)}
+.beat-stat{justify-content:center;padding:0 5px}
+.beat-stat b,.beat-stat.t-jade b,.beat-stat.t-amber b{font-size:10.5px;font-weight:500;color:var(--beat-ink-2)}
+.beat-stat span{font-size:9px}
+.beat-tabs{margin-top:5px}
+.beat-tab{height:31px}
+.beat-filters{gap:5px;padding:7px 12px 6px}
+.beat-list{padding:0 10px 6px}
+.beat-chap{gap:8px;width:100%;min-height:55px;margin:5px 0;padding:7px 8px;border:1px solid var(--beat-line);border-radius:6px;background:var(--beat-card)}
+.beat-chap:hover{background:var(--beat-paper-2)}
+.beat-chap[data-open="1"]{background:var(--beat-paper-2);border-color:var(--beat-line-2)}
+.beat-chap[data-open="1"]:before{display:none}
+.beat-chap-no{width:24px;text-align:center;font-size:10.5px;font-weight:500;color:var(--beat-ink-3)}
+.beat-chap[data-current="1"] .beat-chap-no,.beat-chap[data-open="1"] .beat-chap-no{color:var(--beat-red)}
+.beat-chap-name,.beat-chap[data-current="1"] .beat-chap-name{font-size:12px;font-weight:600}
+.beat-chap-meta{margin-top:2px;font-size:9px}
+.beat-segbar{display:none}
+.beat-chap-right{flex-direction:row;align-items:center;gap:5px}
+.beat-chap-state{padding:1px 5px;border:1px solid var(--beat-line);border-radius:4px;background:var(--beat-paper-2);color:var(--beat-ink-3);font-size:8.5px;line-height:1.35}
+.beat-chap-state.ok{color:var(--beat-jade);border-color:var(--beat-jade-line);background:var(--beat-jade-soft)}
+.beat-chap-state.warn,.beat-chap-state.muted{color:var(--beat-ink-3);border-color:var(--beat-line);background:transparent}
+.beat-chap[data-tone="stale"] .beat-chap-state{color:var(--beat-red);border-color:var(--beat-red-line);background:var(--beat-red-soft)}
+.beat-decs{padding:0 2px 3px;border:0;background:transparent}
+.beat-decs:before{display:none}
+.beat-dec{align-items:flex-start;gap:7px;margin:4px 0;padding:7px;border:1px solid var(--beat-line);border-radius:5px;background:var(--beat-card)}
+.beat-dec:hover{background:var(--beat-paper-2)}
+.beat-dec[data-a="1"]{padding:7px;border-color:var(--beat-red-line);background:var(--beat-card);box-shadow:none}
+.beat-dec[data-a="1"]:after{left:-1px;top:6px;bottom:6px;width:2px;background:var(--beat-red)}
+.beat-seal{width:17px;height:17px;margin-top:0;border-radius:3px;transform:none;font-size:9px}
+.beat-seal[data-state="open"]{color:var(--beat-ink-3);border-color:var(--beat-line);background:transparent;border-style:solid}
+.beat-dec-title{font-family:"Songti SC","STSong","SimSun",serif;font-size:12px;line-height:1.4;font-weight:600}
+.beat-dec-choice{font-size:10px}
+.beat-dec-meta{gap:4px;margin-top:3px;font-size:8.5px}
+.beat-kind{height:auto;padding:1px 4px;border-color:var(--beat-line);border-radius:3px;background:transparent;color:var(--beat-ink-3);font:8px/1.3 var(--beat-sans,sans-serif)}
+.beat-dec-right{align-items:center;gap:4px;padding-top:0}
+.beat-dec-badge{height:auto;padding:1px 5px;border:1px solid var(--beat-line);border-radius:4px;background:transparent;color:var(--beat-ink-3);font-size:8.5px;line-height:1.35}
+.beat-dec[data-state="committed"] .beat-dec-badge{color:var(--beat-jade);border-color:var(--beat-jade-line);background:var(--beat-jade-soft)}
+.beat-dec[data-state="open"] .beat-dec-badge,.beat-dec[data-state="legacy"] .beat-dec-badge{color:var(--beat-ink-3)}
+.beat-detail{margin:5px 0 8px;border:1px solid var(--beat-line-2);border-radius:6px;background:var(--beat-card);box-shadow:none}
+.beat-detail:before{display:none}
+.beat-detail-inner{padding:9px 10px}
+.beat-detail-stamp{display:none}
+.beat-detail-top{padding-right:0}
+.beat-detail-title{margin:4px 0 2px;font-family:"Songti SC","STSong","SimSun",serif;font-size:14px;line-height:1.45}
+.beat-detail-change{font-size:9.5px;color:var(--beat-ink-2)}
+.beat-gate{display:flex;flex-direction:column;gap:2px;margin-top:7px;padding:5px 0;border:0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line);border-radius:0;background:transparent;font-size:9px}
+.beat-gate-title{font-size:8.5px;font-weight:500;color:var(--beat-ink-3)}
+.beat-gate-delta{margin-top:0;color:var(--beat-ink);font:11px/1.5 "Songti SC","STSong","SimSun",serif}
+.beat-gate-reason{margin-top:0;color:var(--beat-ink-3);font-size:8.5px}
+.beat-evidence-list{margin-top:3px}
+.beat-evidence-status{margin:2px 0;font-size:8px}
+.beat-evidence{margin-top:0;padding:3px 1px;border:0;border-bottom:1px dotted var(--beat-line);border-radius:0;background:transparent;font-size:8px}
+.beat-evidence summary{font-size:8px}
+.beat-evidence blockquote{font-family:"Songti SC","STSong","SimSun",serif;font-size:10px}
+.beat-cur{margin-top:7px;padding:6px 8px;border-color:var(--beat-line);border-radius:5px;background:transparent}
+.beat-cur-mark{border:1px solid var(--beat-line);background:transparent;color:var(--beat-ink-3)}
+.beat-cur[data-state="committed"]{border-color:var(--beat-jade-line);background:var(--beat-jade-soft)}
+.beat-cur[data-state="committed"] .beat-cur-mark{border-color:var(--beat-jade);background:var(--beat-jade);color:var(--beat-paper)}
+.beat-cur-v{font-size:10.5px}
+.beat-cur-tag{border-color:var(--beat-line);color:var(--beat-ink-3);background:transparent}
+.beat-cur[data-state="committed"] .beat-cur-tag{border-color:var(--beat-jade-line);color:var(--beat-jade)}
+.beat-opts{gap:0;margin-top:5px}
+.beat-opt{gap:7px;padding:6px 0;border-bottom:1px solid var(--beat-line);border-radius:0;font-size:10px;line-height:1.45}
+.beat-opt:last-child{border-bottom:0}
+.beat-opt-letter{width:18px;height:17px;margin-top:0;border:1px solid var(--beat-line);border-radius:3px;text-align:center;font-size:8.5px;line-height:15px;color:var(--beat-ink-3)}
+.beat-opt[data-cur="1"] .beat-opt-letter{border-color:var(--beat-red-line);background:var(--beat-red-soft);color:var(--beat-red)}
+.beat-opt-heading b{font-family:"Songti SC","STSong","SimSun",serif;font-size:11px}
+.beat-opt[data-cur="1"] .beat-opt-heading b{color:var(--beat-red)}
+.beat-style-fit{border-color:var(--beat-line);background:transparent;color:var(--beat-ink-3)}
+.beat-opt-field{margin-top:2px;font-size:9.5px;line-height:1.45;color:var(--beat-ink-2)}
+.beat-opt-delta{font-family:var(--beat-sans,sans-serif);font-size:8.5px;color:var(--beat-ink-3)}
+.beat-style-why{color:var(--beat-ink-3)}
+.beat-changes{gap:3px;margin-top:5px}
+.beat-change{border-color:var(--beat-line);background:transparent;color:var(--beat-ink-3)}
+.beat-seg{font-size:8.5px}
+.beat-impact{margin-top:6px;padding:5px 7px;border:0;border-left:2px solid var(--beat-red);border-radius:0;background:var(--beat-red-soft);color:var(--beat-red);font-size:8.8px}
+.beat-blocked{margin-top:6px;padding:5px 0;border:0;border-top:1px solid var(--beat-line);border-radius:0;color:var(--beat-ink-3);font-size:9px}
+.beat-detail-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:7px}
+.beat-btn{min-width:0;height:auto;min-height:30px;padding:5px 6px;white-space:normal;line-height:1.3;text-align:center;font-size:9.5px}
+.beat-btn[data-p="1"]{background:var(--beat-red);border-color:var(--beat-red);color:var(--beat-on-accent)}
+.beat-btn:focus-visible,.beat-sheet button:focus-visible,.beat-tab:focus-visible,.beat-chip:focus-visible,.beat-chap:focus-visible{outline:2px solid var(--beat-red);outline-offset:2px}
+.beat-rejected{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:baseline;gap:5px;margin:4px 1px;padding:4px 2px;border:0;border-bottom:1px dashed var(--beat-line);border-radius:0;background:transparent;opacity:1;font-size:8.5px}
+.beat-rejected-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--beat-ink-3);font-size:8.5px;font-weight:500}
+.beat-rejected-options,.beat-rejected-note{display:none}
+.beat-rejected-reason{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--beat-ink-3);font-size:8.5px}
+.beat-notice{margin-right:12px;margin-left:12px}
+.beat-banner{margin-right:12px;margin-left:12px}
+.beat-sheet{max-width:100%;max-height:88%;overflow-x:hidden;overflow-y:auto;padding:8px 12px calc(12px + env(safe-area-inset-bottom,0px));border-radius:8px 8px 0 0;box-shadow:0 -8px 24px color-mix(in srgb,var(--beat-ink) 14%,transparent);overflow-wrap:anywhere}
+.beat-sheet-stats{gap:0;margin-top:7px;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line)}
+.beat-sheet-stat{min-width:0;padding:5px 6px;border:0;border-left:1px solid var(--beat-line);border-radius:0;background:transparent;box-shadow:none}
+.beat-sheet-stat:first-child{border-left:0;padding-left:0}
+.beat-sheet-stat b{display:inline;font-size:11px;font-weight:500}
+.beat-sheet-stat b em{font-size:8.5px}
+.beat-sheet-stat span{display:inline;margin-left:4px;font-size:8.5px}
+.beat-sheet-stat[data-tone="warn"] b{color:var(--beat-ink-2)}
+.beat-sheet-list{margin-top:5px}
+.beat-sheet-row{gap:6px;padding:5px 0;border-bottom:1px solid var(--beat-line)}
+.beat-sheet-ico{width:14px;height:14px;border-radius:0;background:transparent;color:var(--beat-ink-3)}
+.beat-sheet-k{font-size:8.5px;color:var(--beat-ink-3)}
+.beat-sheet-v{font-size:9px;line-height:1.45;color:var(--beat-ink-2);overflow-wrap:anywhere}
+.beat-sheet-save,.beat-sheet-stale{margin-top:6px;padding:5px 0;border:0;border-top:1px solid var(--beat-line);border-radius:0;background:transparent}
+.beat-sheet-check{border-radius:2px;background:var(--beat-ink-2);color:var(--beat-paper)}
+.beat-sheet-save-t,.beat-sheet-stale-t{font-size:9px;color:var(--beat-ink-2)}
+.beat-sheet-save-s,.beat-sheet-stale-s{font-size:8.5px;color:var(--beat-ink-3)}
+.beat-sheet-stale .beat-sheet-check[data-on="1"]{background:var(--beat-ink-2);color:var(--beat-paper)}
+.beat-sheet-actions{gap:6px;margin-top:8px}
+.beat-sheet-actions .beat-btn{min-height:34px;font-size:10px}
+.beat-sheet-actions .beat-btn[data-p="0"]{flex:0 0 72px}
+.beat-sheet-actions .beat-btn[data-p="1"],.beat-sheet-actions .beat-btn[data-p="1"][data-danger="1"]{background:var(--beat-red);border-color:var(--beat-red);color:var(--beat-on-accent)}
 @media (prefers-reduced-motion:reduce){.beat-root *, .beat-root *:before, .beat-root *:after{transition-duration:0s!important;animation-duration:.01ms!important}}
 `
 
@@ -884,24 +1057,94 @@ body[data-ds-dark-theme] .beat-root{
         h('path', { d: 'M12 3l10 18H2L12 3z' }), h('path', { d: 'M12 9v5M12 17.5v.5' }))
     }
 
-    function BeatDecisionDetail({ decision, chapter, total, onClose, onRewrite, onChoose, busy, on }) {
+    function BeatDecisionDetail({ decision, chapter, total, onClose, returnFocusRef, onRewrite, onChoose, busy, on, transactionBlocked = false }) {
+      const dialogRef = React.useRef(null)
+      React.useEffect(() => {
+        dialogRef.current?.focus?.()
+      }, [decision?.id])
+      const close = () => {
+        onClose?.()
+        returnFocusRef?.current?.focus?.()
+      }
+      const onKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          event.stopPropagation?.()
+          close()
+          return
+        }
+        if (event.key !== 'Tab') return
+        const focusable = [...(event.currentTarget?.querySelectorAll?.('button:not([disabled]), summary, a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
+        if (!focusable.length) {
+          event.preventDefault()
+          dialogRef.current?.focus?.()
+          return
+        }
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.target === event.currentTarget) {
+          event.preventDefault()
+          ;(event.shiftKey ? last : first).focus()
+        } else if (event.shiftKey && event.target === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && event.target === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
       const chosenLabel = decision.chosen?.label ?? ''
       const changes = decision.chosen?.changes ?? []
       const revert = decision.revert
       const later = Math.max(0, (revert?.decisionIds?.length ?? 0) - 1)
       const blocked = decision.revertBlockedReason
       const readOnly = on === false
-      return h('div', { className: 'beat-detail', style: { '--beat-kind': kindTone(decision.kind) } }, [
+      const evidenceInvalid = decision.evidenceStatus?.valid === false || decision.canCommit === false
+      const stateName = (value, label) => label ? `${label} (${value || '未知'})` : (value || '未知')
+      const refView = (ref, index, key) => {
+        const location = ref.file
+          ? `${ref.file}${Number.isInteger(ref.offsetStart) ? ` · ${ref.offsetStart}–${ref.offsetEnd}` : ''}`
+          : ref.segmentId ? `段落 ${ref.segmentId}` : ref.sourceId ? `来源 ${ref.sourceId}` : ref.kind
+        return h('details', { className: 'beat-evidence', key: `${key}-${index}` }, [
+          h('summary', { key: 'summary' }, `证据 ${index + 1} · ${location}`),
+          h('blockquote', { key: 'quote' }, `“${ref.quote || '（没有引文）'}”`),
+          ref.hash ? h('code', { key: 'hash', title: ref.hash }, `SHA-256 ${ref.hash.slice(0, 12)}…${ref.hash.slice(-8)}`) : null,
+        ])
+      }
+      const claimText = (claims) => Array.isArray(claims) ? claims.map((claim) => claim.text).filter(Boolean).join('；') : ''
+      const evidenceValid = decision.evidenceStatus?.valid !== false
+      const canRewind = decision.canRevert && !busy && !readOnly && !transactionBlocked && !evidenceInvalid
+      return h('div', {
+        ref: dialogRef,
+        className: 'beat-detail',
+        style: { '--beat-kind': kindTone(decision.kind) },
+        role: 'dialog',
+        'aria-modal': 'true',
+        'aria-labelledby': 'beat-detail-title',
+        tabIndex: -1,
+        onKeyDown,
+      }, [
         h('span', { className: 'beat-detail-stamp', key: 'stamp', 'aria-hidden': 'true' }, [h('span', { key: 'zhu' }, '朱'), h('span', { key: 'pi' }, '批')]),
         h('div', { className: 'beat-detail-inner', key: 'inner' }, [
           h('div', { className: 'beat-detail-top', key: 'top' }, [
             h('span', { key: 'k' }, `第 ${chapter} 章 · 决策 ${decision.seq}/${total} · ${decision.id}`),
             h('span', { className: 'beat-spacer', key: 's' }),
-            h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: onClose, title: '关闭详情', 'aria-label': '关闭详情' }, '×'),
+            h('button', { key: 'x', type: 'button', className: 'beat-detail-close', onClick: close, title: '关闭详情', 'aria-label': '关闭详情' }, '×'),
           ]),
-          h('div', { className: 'beat-detail-title', key: 'title' }, decision.title),
+          h('div', { className: 'beat-detail-title', id: 'beat-detail-title', key: 'title' }, decision.title),
           h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
-          h('div', { className: 'beat-cur', key: 'cur' }, [
+          decision.gate ? h('div', { className: 'beat-gate', key: 'gate' }, [
+            h('div', { className: 'beat-gate-title', key: 'title' }, `命中：${decision.gate.entityLabel || decision.gate.entity} / ${decision.gate.key}${decision.gate.keyLabel ? ` · ${decision.gate.keyLabel}` : ''}`),
+            h('div', { className: 'beat-gate-delta', key: 'delta' }, `${stateName(decision.gate.from, decision.gate.fromLabel)} → ${stateName(decision.gate.to, decision.gate.toLabel)}`),
+            h('div', { className: 'beat-gate-reason', key: 'reason' }, `打断理由：${decision.gate.reason || decision.change || '—'}`),
+          ]) : null,
+          decision.gate?.evidence?.length ? h('div', { className: 'beat-evidence-list', key: 'evidence' }, [
+            h('div', { className: 'beat-evidence-status', 'data-invalid': evidenceValid ? '0' : '1', key: 'status' }, evidenceValid
+              ? (decision.evidenceStatus?.valid === true ? '正文 hash 与引用已校验 · 点开引文可回查' : '证据状态待核验')
+              : `证据已失效，禁止拍板：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '来源无法核验'}`),
+            ...decision.gate.evidence.map((ref, index) => refView(ref, index, 'gate')),
+          ]) : null,
+          h('div', { className: 'beat-cur', 'data-state': decision.chosen ? 'committed' : 'open', key: 'cur' }, [
             h('span', { className: 'beat-cur-mark', key: 'm' }, decision.chosen ? '✓' : '·'),
             h('div', { className: 'beat-cur-grow', key: 'g' }, [
               h('div', { className: 'beat-cur-k', key: 'k' }, '当前选择'),
@@ -913,11 +1156,21 @@ body[data-ds-dark-theme] .beat-root{
             className: 'beat-opt',
             key: option.label,
             'data-cur': option.label === chosenLabel ? '1' : '0',
+            tabIndex: 0,
           }, [
             h('span', { className: 'beat-opt-letter', key: 'letter' }, String.fromCharCode(65 + index)),
             h('span', { className: 'beat-opt-label', key: 'l' }, [
-              h('div', { key: 'label' }, option.label),
-              option.impact ? h('div', { className: 'beat-opt-impact', key: 'impact' }, option.impact) : null,
+              h('div', { className: 'beat-opt-heading', key: 'label' }, [
+                h('b', { key: 'name' }, option.label),
+                option.styleFit ? h('span', { className: 'beat-style-fit', title: option.styleFit.explanation, key: 'fit' }, `贴合 ${option.styleFit.score}/100 · 仅建议`) : null,
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'action' }, `动作：${option.action || option.impact || '—'}`),
+              h('div', { className: 'beat-opt-field', key: 'costs' }, `代价：${option.costs?.join('；') || '—'}`),
+              h('div', { className: 'beat-opt-field', key: 'outcomes' }, `预期后果：${claimText(option.outcomes) || '—'}`),
+              h('div', { className: 'beat-opt-field', key: 'gain' }, `信息增量：${claimText(option.informationGain) || '—'}`),
+              h('div', { className: 'beat-opt-field', key: 'risks' }, `风险：${claimText(option.risks) || '—'}`),
+              h('div', { className: 'beat-opt-field beat-opt-delta', key: 'delta' }, `状态差分：${(option.changes ?? []).map((change) => `${change.entity}.${change.key}: ${stateName(change.from, change.fromLabel)} → ${stateName(change.to, change.toLabel)}`).join('；') || '—'}`),
+              option.styleFit?.explanation ? h('div', { className: 'beat-style-why', key: 'why' }, option.styleFit.explanation) : null,
             ]),
           ]))),
           changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
@@ -935,20 +1188,22 @@ body[data-ds-dark-theme] .beat-root{
             ])
             : h('div', { className: 'beat-blocked', key: 'blocked' }, blocked === 'legacy'
               ? '0.6 旧账只记了选择，没有正文锚点；要改请直接改正文。'
+              : blocked === 'stale-evidence'
+                ? `证据已失效，禁止回退或改选：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '请重新登记有效证据。'}`
               : blocked === 'not-committed'
                 ? '这条决策还没拍板，等模型问到它再定。'
                 : '这条决策还没有登记正文段落，只能查看，不能回退正文。'),
           h('div', { className: 'beat-detail-actions', key: 'actions' }, [
             h('button', {
               key: 'rewind', type: 'button', className: 'beat-btn', 'data-p': '1',
-              disabled: !decision.canRevert || busy || readOnly,
-              title: readOnly ? '先开启拍板' : (decision.canRevert ? '保留当前选择，回到这一段重写' : '没有正文锚点，不能回退'),
+              disabled: !canRewind,
+              title: evidenceInvalid ? '证据已失效，禁止回退或改选' : (transactionBlocked ? '书处于事务隔离/恢复状态，禁止回退' : (readOnly ? '先开启拍板' : (decision.canRevert ? '保留当前选择，回到这一段重写' : '没有正文锚点，不能回退'))),
               onClick: () => onRewrite?.(decision),
             }, busy ? '处理中…' : '回到这里重写'),
             h('button', {
               key: 'choose', type: 'button', className: 'beat-btn',
-              disabled: !decision.canRevert || busy || readOnly,
-              title: readOnly ? '先开启拍板' : (decision.canRevert ? '选另一个走向再重写' : '没有正文锚点，不能改选'),
+              disabled: !canRewind,
+              title: evidenceInvalid ? '证据已失效，禁止回退或改选' : (transactionBlocked ? '书处于事务隔离/恢复状态，禁止回退' : (readOnly ? '先开启拍板' : (decision.canRevert ? '选另一个走向再重写' : '没有正文锚点，不能改选'))),
               onClick: () => onChoose?.(decision),
             }, '改选另一个走向'),
           ]),
@@ -956,7 +1211,11 @@ body[data-ds-dark-theme] .beat-root{
       ])
     }
 
-    function BeatRewindSheet({ sheet, decision, onClose, onSelect, onConfirm, onToggleSnapshot, onToggleStale }) {
+    function BeatRewindSheet({ sheet, decision, onClose, onSelect, onConfirm, onRefreshPlan, onRefreshStatus, onToggleSnapshot }) {
+      const dialogRef = React.useRef(null)
+      React.useEffect(() => {
+        if (sheet) dialogRef.current?.focus?.()
+      }, [sheet?.decision?.id])
       if (!sheet) return null
       const plan = sheet.plan
       const isChoose = sheet.mode === 'choose'
@@ -966,9 +1225,36 @@ body[data-ds-dark-theme] .beat-root{
       const reopened = plan?.reopened ?? []
       const removed = plan?.removedChars ?? 0
       const segmentCount = plan?.segments?.length ?? 0
-      return h('div', { className: 'beat-sheet', role: 'dialog', 'aria-modal': 'true' }, [
+      const onKeyDown = (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          onClose()
+          return
+        }
+        if (event.key !== 'Tab') return
+        const focusable = [...(event.currentTarget?.querySelectorAll?.('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
+        if (!focusable.length) {
+          event.preventDefault()
+          dialogRef.current?.focus?.()
+          return
+        }
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (event.target === event.currentTarget) {
+          event.preventDefault()
+          ;(event.shiftKey ? last : first).focus()
+        } else if (event.shiftKey && event.target === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && event.target === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
+      const tx = sheet.transactionStatus?.latest
+      return h('div', { ref: dialogRef, className: 'beat-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'beat-sheet-title', tabIndex: -1, onKeyDown }, [
         h('div', { className: 'beat-grab', key: 'grab' }),
-        h('h2', { key: 'title' }, isChoose ? `改选「${decision?.title ?? ''}」并重写` : `回到「${decision?.title ?? ''}」`),
+        h('h2', { id: 'beat-sheet-title', key: 'title' }, isChoose ? `改选「${decision?.title ?? ''}」并重写` : `回到「${decision?.title ?? ''}」`),
         h('div', { className: 'beat-sheet-sub', key: 'sub' }, `第 ${decision?.chapter ?? '—'} 章 · ${decision?.id ?? '—'} · 正文与账本一起退`),
         plan ? h('div', { className: 'beat-sheet-stats', key: 'stats' }, [
           h('div', { className: 'beat-sheet-stat', 'data-tone': 'danger', key: 'chars', style: { '--beat-tone': 'var(--beat-danger)' } }, [
@@ -985,6 +1271,33 @@ body[data-ds-dark-theme] .beat-root{
           ]),
         ]) : h('div', { className: 'beat-skel', key: 'loading', style: { marginTop: 9 } }),
         plan ? h('div', { className: 'beat-sheet-list', key: 'list' }, [
+          h('div', { className: 'beat-sheet-row', key: 'tx' }, [
+            h('span', { className: 'beat-sheet-ico', key: 'i' }, 'ID'),
+            h('div', { className: 'beat-sheet-grow', key: 'g' }, [
+              h('div', { className: 'beat-sheet-k', key: 'k' }, '事务与版本'),
+              h('div', { className: 'beat-sheet-v', key: 'v' }, [
+                `事务 ID：${tx?.txId ?? '确认时生成'} · 账本 revision：${plan.expectedRevision ?? '—'} → ${Number.isInteger(plan.expectedRevision) ? plan.expectedRevision + 1 : '提交后确定'} · 正文 revision：${decision.segment?.revisionId ?? '—'}`,
+                h('br', { key: 'br' }),
+                `正文 SHA-256：${plan.expectedBodyHash ? `${plan.expectedBodyHash.slice(0, 12)}…${plan.expectedBodyHash.slice(-8)}` : '待核验'} · 账本 SHA-256：${plan.expectedLedgerHash ? `${plan.expectedLedgerHash.slice(0, 12)}…${plan.expectedLedgerHash.slice(-8)}` : '待核验'}`,
+              ]),
+            ]),
+          ]),
+          h('div', { className: 'beat-sheet-row', key: 'pair' }, [
+            h('span', { className: 'beat-sheet-ico', key: 'i' }, '快'),
+            h('div', { className: 'beat-sheet-grow', key: 'g' }, [
+              h('div', { className: 'beat-sheet-k', key: 'k' }, '成对快照'),
+              h('div', { className: 'beat-sheet-v', key: 'v' }, tx?.snapshots
+                ? `正文 ${tx.snapshots.body.verified ? 'hash 已校验' : '快照待核验'} · 账本 ${tx.snapshots.ledger.verified ? 'hash 已校验' : '快照待核验'}`
+                : '确认前尚未创建；提交事务时会先保存正文与账本 before 快照。'),
+            ]),
+          ]),
+          tx ? h('div', { className: 'beat-sheet-row', key: 'stage' }, [
+            h('span', { className: 'beat-sheet-ico', key: 'i' }, '态'),
+            h('div', { className: 'beat-sheet-grow', key: 'g' }, [
+              h('div', { className: 'beat-sheet-k', key: 'k' }, '最近一次事务'),
+              h('div', { className: 'beat-sheet-v', key: 'v' }, `${tx.txId} · ${tx.stage} · 后续复核 ${tx.staleStatus ?? '—'}${tx.staleChapters?.length ? `（第 ${tx.staleChapters.join('、')} 章）` : ''} · 简报 ${tx.briefStatus ?? '—'}`),
+            ]),
+          ]) : null,
           h('div', { className: 'beat-sheet-row', key: 'text' }, [
             h('span', { className: 'beat-sheet-ico', key: 'i' }, '文'),
             h('div', { className: 'beat-sheet-grow', key: 'g' }, [
@@ -1050,12 +1363,9 @@ body[data-ds-dark-theme] .beat-root{
           ]),
         ]),
         plan && plan.laterChapters?.length > 0 ? h('div', { className: 'beat-sheet-stale', key: 'stale' }, [
-          h('button', {
-            key: 'check', type: 'button', className: 'beat-sheet-check', 'data-on': sheet.markLaterStale ? '1' : '0',
-            onClick: () => onToggleStale(!sheet.markLaterStale), title: sheet.markLaterStale ? '已勾选：后续章节标待复核' : '未勾选：后续章节不标',
-          }, '✓'),
+          h('div', { key: 'check', className: 'beat-sheet-check', 'data-on': '1', title: '回退提交后会标记为待复核' }, '✓'),
           h('div', { className: 'beat-sheet-grow', key: 'g' }, [
-            h('div', { className: 'beat-sheet-stale-t', key: 't' }, sheet.markLaterStale ? '后续章节标记为待复核（已勾选）' : '把后续章节标记为待复核'),
+            h('div', { className: 'beat-sheet-stale-t', key: 't' }, '后续章节提交后标记为待复核'),
             h('div', { className: 'beat-sheet-stale-s', key: 's' }, `第 ${plan.laterChapters.join('、')} 章只加标记，不动正文；侧栏会显示「待复核」。`),
           ]),
         ]) : null,
@@ -1063,12 +1373,27 @@ body[data-ds-dark-theme] .beat-root{
           h(WarningIcon, { key: 'icon' }),
           h('span', { key: 't' }, plan.warnings.join(' ')),
         ]) : null,
-        sheet.error ? h('div', { className: 'beat-sheet-error', key: 'error' }, sheet.error) : null,
+        sheet.error ? h('div', { className: 'beat-sheet-error', key: 'error', role: 'alert' }, [
+          h('b', { key: 'title' }, sheet.errorCode === 'stale-evidence'
+            ? '证据已失效，不能回退或改选。'
+            : sheet.errorCode === 'body-hash-conflict' || sheet.errorCode === 'revision-conflict' || sheet.errorCode === 'stale'
+            ? '正文或账本已变化，不能按旧预览回退。'
+            : sheet.errorCode === 'tx-recovery-failed' || sheet.errorCode === 'book-quarantined'
+              ? '事务恢复失败，书已进入只读隔离。'
+              : sheet.errorCode === 'transaction-recovery-pending' ? '事务恢复尚未完成。' : '操作失败。'),
+          h('div', { key: 'message' }, sheet.error),
+          h('div', { className: 'beat-sheet-error-actions', key: 'actions' }, [
+            sheet.errorCode === 'body-hash-conflict' || sheet.errorCode === 'revision-conflict' || sheet.errorCode === 'stale'
+              ? h('button', { key: 'refresh', type: 'button', onClick: onRefreshPlan }, '刷新影响预览') : null,
+            sheet.errorCode === 'tx-recovery-failed' || sheet.errorCode === 'book-quarantined' || sheet.errorCode === 'transaction-recovery-pending'
+              ? h('button', { key: 'status', type: 'button', onClick: onRefreshStatus }, '刷新事务状态') : null,
+          ]),
+        ]) : null,
         h('div', { className: 'beat-sheet-actions', key: 'actions' }, [
           h('button', { key: 'cancel', type: 'button', className: 'beat-btn', 'data-p': '0', onClick: onClose, disabled: sheet.busy }, '取消'),
           h('button', {
             key: 'ok', type: 'button', className: 'beat-btn', 'data-p': '1', 'data-danger': '1',
-            disabled: sheet.busy || !plan,
+            disabled: sheet.busy || !plan || sheet.blocked || sheet.transactionStatus?.blocked,
             onClick: onConfirm,
           }, sheet.busy ? '正在回退…' : (isChoose ? '改选并重写' : '确认回退')),
         ]),
@@ -1115,6 +1440,7 @@ body[data-ds-dark-theme] .beat-root{
       const searchSeq = React.useRef(0)
       const seq = React.useRef(0)
       const chapterSeq = React.useRef(0)
+      const decisionReturnFocusRef = React.useRef(null)
 
       const loadChapter = async (chapter, force) => {
         if (!sid || !remote || typeof remote.chapter !== 'function') return
@@ -1278,14 +1604,55 @@ body[data-ds-dark-theme] .beat-root{
           setNotice({ text: '先开启拍板，再回退或改选。', error: true })
           return
         }
-        setSheet({ decision, mode, choice, plan: null, busy: true, error: null, snapshot: true, markLaterStale: false })
+        if (view.data?.transactionStatus?.blocked) {
+          setNotice({ text: '本书事务处于隔离或恢复状态，回退已暂停。请先刷新事务状态。', error: true })
+          return
+        }
+        const returnFocus = typeof document !== 'undefined' ? document.activeElement : null
+        const transactionStatus = view.data?.transactionStatus ?? null
+        setSheet({ decision, mode, choice, plan: null, busy: true, error: null, errorCode: null, snapshot: true, returnFocus, transactionStatus, blocked: Boolean(transactionStatus?.blocked) })
         try {
-          const plan = unwrap(await remote.impact(sid, decision.id, { choice }))
+          const plan = requireBusinessOk(unwrap(await remote.impact(sid, decision.id, { choice })))
           setSheet((prev) => (prev && prev.decision?.id === decision.id
-            ? { ...prev, plan, busy: false, error: null }
+            ? { ...prev, plan, busy: false, error: null, errorCode: null }
             : prev))
         } catch (error) {
-          setSheet((prev) => (prev ? { ...prev, plan: null, busy: false, error: String(error?.message ?? error) } : prev))
+          setSheet((prev) => (prev ? { ...prev, plan: null, busy: false, error: String(error?.message ?? error), errorCode: error?.code ?? null, blocked: ['book-quarantined', 'transaction-recovery-pending'].includes(error?.code) } : prev))
+        }
+      }
+
+      const closeSheet = () => {
+        const target = sheet?.returnFocus
+        setSheet(null)
+        if (target?.isConnected && typeof target.focus === 'function') queueMicrotask(() => target.focus())
+      }
+
+      const refreshImpact = async () => {
+        if (!sheet || sheet.busy) return
+        setSheet((prev) => prev ? { ...prev, busy: true, plan: null, error: null, errorCode: null } : prev)
+        try {
+          const plan = requireBusinessOk(unwrap(await remote.impact(sid, sheet.decision.id, { choice: sheet.choice })))
+          setSheet((prev) => prev ? { ...prev, plan, busy: false, error: null, errorCode: null } : prev)
+        } catch (error) {
+          setSheet((prev) => prev ? { ...prev, plan: null, busy: false, error: String(error?.message ?? error), errorCode: error?.code ?? null } : prev)
+        }
+      }
+
+      const refreshTransactionStatus = async () => {
+        if (!sid || !remote || typeof remote.overview !== 'function') return
+        try {
+          const data = unwrap(await remote.overview(sid))
+          setView({ phase: 'ready', data, error: null })
+          setSheet((prev) => prev ? {
+            ...prev,
+            transactionStatus: data?.transactionStatus ?? null,
+            blocked: Boolean(data?.transactionStatus?.blocked),
+            error: null,
+            errorCode: null,
+          } : prev)
+          if (!data?.transactionStatus?.blocked) await refreshImpact()
+        } catch (error) {
+          setSheet((prev) => prev ? { ...prev, error: String(error?.message ?? error), errorCode: error?.code ?? null } : prev)
         }
       }
 
@@ -1296,10 +1663,10 @@ body[data-ds-dark-theme] .beat-root{
         if (!sheet || sheet.busy) return
         setSheet((prev) => ({ ...prev, choice, busy: true, error: null }))
         try {
-          const plan = unwrap(await remote.impact(sid, sheet.decision.id, { choice }))
-          setSheet((prev) => (prev ? { ...prev, plan, busy: false } : prev))
+          const plan = requireBusinessOk(unwrap(await remote.impact(sid, sheet.decision.id, { choice })))
+          setSheet((prev) => (prev ? { ...prev, plan, busy: false, errorCode: null } : prev))
         } catch (error) {
-          setSheet((prev) => (prev ? { ...prev, plan: null, busy: false, error: String(error?.message ?? error) } : prev))
+          setSheet((prev) => (prev ? { ...prev, plan: null, busy: false, error: String(error?.message ?? error), errorCode: error?.code ?? null } : prev))
         }
       }
 
@@ -1307,18 +1674,19 @@ body[data-ds-dark-theme] .beat-root{
         if (!sheet || !sheet.plan || sheet.busy) return
         setSheet((prev) => ({ ...prev, busy: true, error: null }))
         try {
-          const result = unwrap(await remote.rewind(sid, sheet.decision.id, {
+          const result = requireBusinessOk(unwrap(await remote.rewind(sid, sheet.decision.id, {
             choice: sheet.choice,
             confirm: true,
             snapshot: sheet.snapshot !== false,
-            markLaterStale: sheet.markLaterStale === true,
-            expectedBookUpdatedAt: view.data?.bookUpdatedAt ?? null,
-          expectedRevision: view.data?.revision ?? null,
-          }))
+            expectedBookUpdatedAt: sheet.plan.expectedBookUpdatedAt ?? view.data?.bookUpdatedAt ?? null,
+            expectedRevision: sheet.plan.expectedRevision ?? view.data?.revision ?? null,
+            expectedBodyHash: sheet.plan.expectedBodyHash ?? null,
+            expectedLedgerHash: sheet.plan.expectedLedgerHash ?? null,
+          })))
           setSheet(null)
           setSelected(null)
           setNotice({
-            text: result.resume?.message ?? '已回退。',
+            text: `${result.resume?.message ?? '已回退。'} 事务 ${result.txId ?? '—'} · revision ${result.transactionRevision ?? '—'}`,
             prompt: result.resume?.prompt ?? result.resume?.message ?? '继续写这一段。',
             chapter: result.resume?.chapter ?? sheet.decision.chapter,
             offset: result.resume?.offset ?? null,
@@ -1333,7 +1701,8 @@ body[data-ds-dark-theme] .beat-root{
           setOpen(chapter)
           await loadChapter(chapter, true)
         } catch (error) {
-          setSheet((prev) => (prev ? { ...prev, busy: false, error: String(error?.message ?? error) } : prev))
+          setSheet((prev) => (prev ? { ...prev, busy: false, error: String(error?.message ?? error), errorCode: error?.code ?? null, blocked: ['book-quarantined', 'transaction-recovery-pending', 'tx-recovery-failed'].includes(error?.code) } : prev))
+          if (['book-quarantined', 'transaction-recovery-pending', 'tx-recovery-failed'].includes(error?.code)) await refreshTransactionStatus()
         }
       }
 
@@ -1558,9 +1927,16 @@ body[data-ds-dark-theme] .beat-root{
             continue
           }
           const decisions = chapterState.data?.decisions ?? []
-          rows.push(h('div', { className: 'beat-decs', key: `decs-${chapter.chapter}` }, decisions.length === 0
-            ? [h('div', { className: 'beat-empty', key: 'empty', style: { padding: '14px 8px' } }, '这一章没有决策点')]
-            : decisions.map((decision) => {
+          const rejected = chapterState.data?.rejectedCandidates ?? []
+          const voiceFit = chapterState.data?.voiceFit
+          rows.push(h('div', { className: 'beat-decs', key: `decs-${chapter.chapter}` }, [
+            voiceFit ? h('div', { className: 'beat-voice-status', 'data-available': voiceFit.available ? '1' : '0', key: 'voice-status' }, [
+              h('b', { key: 'label' }, voiceFit.available ? `voice ${voiceFit.label} · v${voiceFit.profileVersion ?? '—'}` : '仅建议/未接入'),
+              h('span', { key: 'message' }, voiceFit.message ?? voiceFit.reason ?? '使用默认顺序，voice 不影响拍板数据。'),
+            ]) : null,
+            decisions.length === 0
+              ? h('div', { className: 'beat-empty', key: 'empty', style: { padding: '14px 8px' } }, '这一章没有决策点')
+              : decisions.map((decision) => {
               const active = selected === decision.id
               const decisionState = decision.legacy ? 'legacy' : (decision.status === 'committed' ? 'committed' : 'open')
               const decisionStatus = decision.legacy ? '旧账' : (decision.status === 'committed' ? '已拍板' : '待拍板')
@@ -1572,10 +1948,14 @@ body[data-ds-dark-theme] .beat-root{
                   'data-state': decisionState,
                   role: 'button',
                   tabIndex: 0,
-                  onClick: () => setSelected(active ? null : decision.id),
+                  onClick: (event) => {
+                    decisionReturnFocusRef.current = event.currentTarget
+                    setSelected(active ? null : decision.id)
+                  },
                   onKeyDown: (event) => {
                     if (event.key !== 'Enter' && event.key !== ' ') return
                     event.preventDefault()
+                    decisionReturnFocusRef.current = event.currentTarget
                     setSelected(active ? null : decision.id)
                   },
                 }, [
@@ -1612,13 +1992,22 @@ body[data-ds-dark-theme] .beat-root{
                   chapter: chapter.chapter,
                   total: decisions.length,
                   onClose: () => setSelected(null),
+                  returnFocusRef: decisionReturnFocusRef,
                   onRewrite: rewrite,
                   onChoose: choose,
                   busy: Boolean(sheet),
                   on: data?.on === true,
+                  transactionBlocked: Boolean(data?.transactionStatus?.blocked),
                 }) : null,
               ])
-            })))
+            }),
+            rejected.map((entry) => h('div', { className: 'beat-rejected', key: entry.id, 'aria-disabled': 'true' }, [
+              h('div', { className: 'beat-rejected-title', key: 'title' }, `${entry.title || '候选'} · 已拒收的假分叉`),
+              h('div', { className: 'beat-rejected-options', key: 'options' }, entry.options.map((option) => option.label).join(' / ')),
+              h('div', { className: 'beat-rejected-reason', key: 'reason' }, entry.reason),
+              h('div', { className: 'beat-rejected-note', key: 'note' }, '仅本会话临时显示，不进入账本，也不能选择。'),
+            ])),
+          ]))
         }
         body = h('div', { className: 'beat-list', key: 'list' }, rows)
       }
@@ -1790,6 +2179,11 @@ body[data-ds-dark-theme] .beat-root{
       }, [
         h('style', { key: 'css' }, BEAT_PANEL_CSS),
         header,
+        data?.transactionStatus?.blocked ? h('div', { className: 'beat-quarantine', key: 'quarantine', role: 'alert' }, [
+          h('b', { key: 'title' }, data.transactionStatus.quarantined ? '本书已进入只读隔离' : '事务恢复尚未完成'),
+          h('span', { key: 'message' }, data.transactionStatus.quarantine?.reason ?? data.transactionStatus.error ?? `事务 ${data.transactionStatus.latest?.txId ?? '未知'} · ${data.transactionStatus.latest?.stage ?? '状态待核验'}。写入与重复回退已暂停。`),
+          h('button', { key: 'refresh', type: 'button', onClick: refreshAll }, '刷新状态'),
+        ]) : null,
         activeTab === 'map' ? h('div', { className: 'beat-search', key: 'search' }, [
           h('svg', { className: 'beat-search-ico', key: 'icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, 'aria-hidden': 'true' },
             h('circle', { cx: 11, cy: 11, r: 6 }), h('path', { d: 'M16 16l4 4' })),
@@ -1840,7 +2234,7 @@ body[data-ds-dark-theme] .beat-root{
         h('div', { className: 'beat-foot', key: 'foot' }, [
           h('span', { key: 'l' }, data?.book ? 'book.json' : '未连接账本'),
           h('span', { className: 'beat-spacer', key: 's' }),
-          h('span', { key: 'v' }, 'v0.9.0'),
+          h('span', { key: 'v' }, 'v0.10.2'),
         ]),
         sheet ? h('div', {
           className: 'beat-scrim',
@@ -1851,11 +2245,12 @@ body[data-ds-dark-theme] .beat-root{
           key: 'sheet',
           sheet,
           decision: sheet.decision,
-          onClose: () => { if (!sheet.busy) setSheet(null) },
+          onClose: closeSheet,
           onSelect: selectChoice,
           onConfirm: confirmSheet,
+          onRefreshPlan: refreshImpact,
+          onRefreshStatus: refreshTransactionStatus,
           onToggleSnapshot: (value) => setSheet((prev) => (prev ? { ...prev, snapshot: value } : prev)),
-          onToggleStale: (value) => setSheet((prev) => (prev ? { ...prev, markLaterStale: value } : prev)),
         }) : null,
         oldLine ? h('div', {
           className: 'beat-scrim',
@@ -1900,6 +2295,9 @@ body[data-ds-dark-theme] .beat-root{
     const TAB_TITLE = '拍板台'
 
     return {
+      __test: typeof globalThis !== 'undefined' && globalThis.__NOVEL_BEAT_TEST__ === true
+        ? { BeatDecisionDetail, BeatRewindSheet }
+        : undefined,
       inject: ['slots', 'remote'],
       async apply(ctx) {
         let remote = null

@@ -23,11 +23,14 @@ import {
 import { createReadOnlyService } from './lib/service.js'
 import { evaluateWrite, DEFAULT_BODY_ROOTS, WRITE_TOOL_NAMES } from './lib/enforce.js'
 import { DECISION_STATUS, OPEN_DECISION_STATUSES, TASK_STATE } from './lib/schema.js'
+import { isBookWriteBlockedSync } from './lib/transaction.js'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join as joinPath } from 'node:path'
 
 export const inject = ['tools', 'commands', 'workingDirectory', 'agents']
+
+const SEGMENT_LOOP_ENABLED = process.env.DSH_NOVEL_BEAT_SEGMENT_LOOP === '1'
 
 /** 插件版本以 package.json 为准（发布时只改一处）。 */
 let VERSION = '0.0.0'
@@ -44,19 +47,41 @@ const SYSTEM_RULES = [
   '',
   '这一会话由作者开启了"遇到岔路先问、答完接着写"的硬规则，插件在引擎层执行它：',
   '',
-  '1. 节奏是**写一段 → 遇到岔路 → 问一次 → 按答案接着写 → 登记这一段 → 再问下一个**。',
-  '   不要攒一批决策点一次问完：`beat_next` 一次只问一个，而且上一条还没用 `beat_segment` 登记时，它会拒绝发下一个（`segment-required`）。',
-  '2. 本章还有没问的岔路（`beat_plan` 登记了但没问）时，往正文目录写会被拒（`PENDING_DECISIONS`）。',
-  '   刚拍完板、正在写那一段时的写是允许的；写完用 `beat_segment` 登记，闸才会放下一题。',
-  '3. 写过的东西要改：用 `beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废），不要静默覆盖。',
+  SEGMENT_LOOP_ENABLED
+    ? '1. segment-loop 章的节奏是**追加一个自然段 → `beat_plan` 检查 → 有岔路就 `beat_next` 问作者 → 作者选择对应的下一段再追加**；每个工具调用都用最新 revision。'
+    : '1. 节奏是**写一段 → 遇到岔路 → 问一次 → 按答案接着写 → 登记这一段 → 再问下一个**。',
+  SEGMENT_LOOP_ENABLED
+    ? '   不要攒一批决策点一次问完：`beat_next` 一次只问一个；作者选择后，必须先用 `beat_append` 登记对应的下一段，才会放行下一个问题。'
+    : '   不要攒一批决策点一次问完：`beat_next` 一次只问一个，而且上一条还没用 `beat_segment` 登记时，它会拒绝发下一个（`segment-required`）。',
+  SEGMENT_LOOP_ENABLED
+    ? '2. segment-loop 章不直接写入正文目录；只用 `beat_append` 保存单段。每段追加后必须 `beat_plan` 检查，含岔路时必须等作者选择。'
+    : '2. 本章还有没问的岔路（`beat_plan` 登记了但没问）时，往正文目录写会被拒（`PENDING_DECISIONS`）。',
+  SEGMENT_LOOP_ENABLED
+    ? '   不得把该章切回 legacy `beat_segment`；章末用 `beat_finish` 合并，再把返回的全文原样传给 `beat_verify`。'
+    : '   刚拍完板、正在写那一段时的写是允许的；写完用 `beat_segment` 登记，闸才会放下一题。',
+  SEGMENT_LOOP_ENABLED
+    ? '3. segment-loop 段落写错时，用 `beat_revert` 回退目标段及其后缀，再以新 operationId 重新追加；不要手动改 artifact。'
+    : '3. 写过的东西要改：用 `beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废），不要静默覆盖。',
   '   只是错字、语序、环境描写：`beat_adjust`（不改故事状态，也不用问作者）。',
-  '4. 一章正文一条决策都没有时，`beat_verify` 会拒绝盖章（`NO_TASK`）：先登记岔路，别整章闷头写完。',
-  '5. 一次只登记一个决策点：写到那个岔路才 `beat_plan`，不要预先规划整章（那会让每章固定成"开局 / 中段 / 章末钩子"三条）。',
+  SEGMENT_LOOP_ENABLED
+    ? '4. segment-loop 章允许没有决策点；所有段都有有效检查且没有待选择后，用 `beat_finish`，再以其返回的文本调用 `beat_verify`。'
+    : '4. 零决策章可以通过，但必须先 `beat_plan(beats: [], reason, path 或 text)` 登记零候选扫描；正文 hash 或相关输入变化后重扫。无有效 scan 收据时 `beat_verify` 会以 `scan-required` / `stale-scan` 拒绝。',
+  SEGMENT_LOOP_ENABLED
+    ? '5. 一次只登记一个决策点：写到那个岔路才 `beat_plan`，不要预先规划整章（那会让每章固定成"开局 / 中段 / 章末钩子"三条）。模型只提案；闸门核验；作者拍板。'
+    : '5. 一次只登记一个决策点：模型只提案，闸门核验状态差分和 EvidenceRef，作者拍板。新提案须用 gate 与六要素；写到那个岔路才 `beat_plan`，不要预先规划整章。',
   '6. 作者自己插了一条岔路（`/beat fork`，账本里是 `f-x`、状态 open）时，下一步必须先 `beat_plan(…, forkId: \'f-x\', beats: […])` 把它写成决策点；在那之前 `beat_next` 会拒发新题（`fork-required`）。',
-  '7. 每登记完一段（`beat_segment`），写下一段之前必须先做一次**续写检查**：后面有真岔路就 `beat_plan` 登记这一个；确实没有就 `beat_plan(beats: [], reason: \'为什么不用作者拍板\')`。没做检查就写正文会被拒（`CONTINUATION_CHECK`）。这不是形式——它保证段落边界是顺着剧情长的，而不是事后切的。',
+  SEGMENT_LOOP_ENABLED
+    ? '7. 每次 `beat_append` 后、下一次追加之前，必须对最新段调用 `beat_plan`：有真岔路就登记这一个；确实没有就传 `beats: [] + reason`。这确保每个段落都经过续写检查。'
+    : '7. 每登记完一段（`beat_segment`），写下一段之前必须先做一次**续写检查**：后面有真岔路就 `beat_plan` 登记这一个；确实没有就 `beat_plan(beats: [], reason: \'为什么不用作者拍板\', path 或 text)`。没做检查就写正文会被拒（`CONTINUATION_CHECK`）。这不是形式——它保证段落边界是顺着剧情长的，而不是事后切的。',
   '8. 作者选的选项要是会改掉账本里的既有设定，`beat_next` 不会硬失败：它会让你去问作者"是否允许这次剧情改这个设定"，作者同意后再 `beat_next(confirmCanon: true)` 提交。',
   '',
   '把这条规则当成作者亲手设的约束：不解释、不绕过、不"先写一版看看"。',
+  ...(SEGMENT_LOOP_ENABLED ? [
+    '',
+    '## 0.11 候选实验：段落循环',
+    '本开关只新增流程：仅对首次由 beat_append 建立的 writingMode: segment-loop 章节使用新规则；已有/legacy 章节继续遵循 beat_segment 流程。',
+    '对 segment-loop 章节，每次 append 一个自然段，段后必须 beat_plan 并绑定最新 segmentId/segmentHash/expectedRevision；有岔路先 beat_next 等作者，下一次 append 才登记其输出段；无岔路用 beats:[] + reason。章末 beat_finish 后，把它返回的 text 原样交给 beat_verify。不得与 beat_segment 混用；本实验不写正文/章节文件。',
+  ] : []),
 ].join('\n')
 
 const SKILL = {
@@ -71,10 +96,16 @@ const SKILL = {
     '',
     '这个技能只出现在作者用 `/beat on` 开启的会话里。开启即代表作者接受硬规则：',
     '**有岔路没问完，就不许往下写**（引擎层会拒，`PENDING_DECISIONS`）。',
+    ...(SEGMENT_LOOP_ENABLED ? [
+      '0.11 实验流程只适用于首次由 `beat_append` 建立的 segment-loop 章节；已有/legacy 章节继续使用 `beat_segment` 和原有正文流程。',
+    ] : []),
     '',
     '## 唯一判定规则',
     '',
     '**会改变故事状态的节点，必须问作者；只描述世界的，模型自己决定。**',
+    SEGMENT_LOOP_ENABLED
+      ? '模型只能提交候选；实验流程按既有段落检查和作者选择推进，只有作者选择才会写入已选状态。'
+      : '模型只能提交候选；状态键白名单、当前 canon、EvidenceRef 的 SHA-256/UTF-16 offset/quote 和选项差分由闸门确定性核验；只有作者选择才会写入已选状态。旧账证据保持 legacy，不补造锚点。',
     '',
     '- 要问：谁死谁活、谁知道了什么、**信息揭露到什么程度**、关系变了、得到或失去了什么、位置时间跳了、承诺立了、剧情分叉了、金手指或世界观规则变了。',
     '- 不问：风、光、温度、气味、比喻、房间陈设、说话时手放在哪。',
@@ -83,21 +114,39 @@ const SKILL = {
     '## 一章的节奏（必须按这个走）',
     '',
     '1. **看账本** — `beat_list(context:true)`：拿全书 canon、未回收义务、最近决策。写下一章前必看。',
-    '2. **先写开场** — 直接写这一章开头那一段（还没遇到岔路的部分）。这一步允许，也建议：作者想看到内容，再决定岔路。',
-    '3. **遇到第一个岔路** — `beat_plan(dir, book, chapter, beats)` 只登记**这一个**决策点（一次一个；多给会被拒），给 2–4 个真分叉；每个选项写 `impact` 和 `changes`（entity / key / from / to / evidence），不同选项的 `changes` 必须不同。写到哪个岔路才登记那一个——不要预先规划整章，那会把决策点变成"开局 / 中段 / 章末钩子"三条模板。',
+    SEGMENT_LOOP_ENABLED
+      ? '2. **先写开场** — 直接用 `beat_append` 追加这一章开头的一个自然段；该段也必须通过后续续写检查。'
+      : '2. **先写开场** — 直接写这一章开头那一段（还没遇到岔路的部分）。这一步允许，也建议：作者想看到内容，再决定岔路。',
+    SEGMENT_LOOP_ENABLED
+      ? '3. **遇到第一个岔路** — `beat_plan(dir, book, chapter, beats)` 只登记**这一个**决策点（一次一个；多给会被拒），给 2–4 个真分叉；每个选项写 `impact` 和 `changes`（entity / key / from / to / evidence），不同选项的 `changes` 必须不同。'
+      : '3. **遇到第一个岔路** — `beat_plan` 只提交一个候选 gate：稳定 entity/key/from/to、精确 EvidenceRef、reason/confidence；给 2–4 个选项，每项必须写 action、costs、outcomes、informationGain、risks、changes。差分必须真实不同，不能只换措辞或省略代价后果。',
     '4. **问一次** — `beat_next`：插件亲手把**一个**决策摆给作者并等回答。不要一次问三个，也不要自己替作者选。',
-    '5. **按答案接着写这一段** — 写完用 `beat_segment` 登记（挂到刚拍板的决策上，存快照 + hash）。',
-    '   没登记之前 `beat_next` 会拒发下一个（`segment-required`）——这就是"写一段再问下一个"的闸。',
-    '5b. **续写检查** — 登记完一段，写下一段之前必须先回答"后面还有没有真岔路"：',
-    '   有 → `beat_plan` 登记这一个（就接回第 3 步）；确实没有 → `beat_plan(beats: [], reason: \'…\')` 说明为什么不用作者拍板。',
-    '   没回答之前往正文写会被拒（`CONTINUATION_CHECK`）。宁可老实说"这里是过渡"，也不要造一个假岔路。',
+    SEGMENT_LOOP_ENABLED
+      ? '5. **按答案续写** — 作者选择后，只生成与选择对应的下一段，调用 `beat_append` 登记；未登记前 `beat_next` 不会发下一个问题。'
+      : '5. **按答案接着写这一段** — 写完用 `beat_segment` 登记（挂到刚拍板的决策上，存快照 + hash）。',
+    SEGMENT_LOOP_ENABLED
+      ? '5b. **续写检查** — 每次追加后、下一次追加前都回答"后面还有没有真岔路"：'
+      : '   没登记之前 `beat_next` 会拒发下一个（`segment-required`）——这就是"写一段再问下一个"的闸。',
+    SEGMENT_LOOP_ENABLED
+      ? '   有 → `beat_plan` 登记这一个；确实没有 → `beat_plan(beats: [], reason: \'…\')` 说明为什么不用作者拍板。未完成检查或作者选择前，不得追加下一段。'
+      : '5b. **续写检查** — 登记完一段，写下一段之前必须先回答"后面还有没有真岔路"：',
+    SEGMENT_LOOP_ENABLED
+      ? '   宁可老实说"这里是过渡"，也不要造一个假岔路。'
+      : '   有 → `beat_plan` 登记这一个（就接回第 3 步）；确实没有 → `beat_plan(beats: [], reason: \'…\')` 说明为什么不用作者拍板。',
+    SEGMENT_LOOP_ENABLED
+      ? ''
+      : '   没回答之前往正文写会被拒（`CONTINUATION_CHECK`）。宁可老实说"这里是过渡"，也不要造一个假岔路。',
     '6. **遇到下一个岔路** — 回到第 3 步，重复。',
-    '7. **这一章写完** — `beat_compile`（可选，产出本章约束）→ `beat_verify`（`text` 或 `path`）：证据、禁项、到期义务、段落漂移、有没有没登记的正文。',
+    SEGMENT_LOOP_ENABLED
+      ? '7. **这一章写完** — `beat_finish` 确定性合并并返回全文 → 将全文原样交给 `beat_verify(text)`。本实验不写正文文件。'
+      : '7. **这一章写完** — 零决策章先 `beat_plan(beats: [], reason, path 或 text)` 绑定最终正文；已有段落文件时可省略来源。依赖大纲/canon/作者回执时附 sourceRefs。再 `beat_compile`（可选）→ `beat_verify`（`text` 或 `path`）：证据、禁项、到期义务、段落漂移、有没有没登记的正文。',
     '',
     '## 改与退',
     '',
     '- 只是错字、语序、环境描写：`beat_adjust`（不改变故事状态，不用问作者）。',
-    '- 写错了、作者说"这一段不行、重写"：`beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废；返回的话就是让模型从哪重写）。作者也可以自己敲 `/beat revert`。',
+    SEGMENT_LOOP_ENABLED
+      ? '- segment-loop 段落写错了：用 `beat_revert` 回退目标段及其后缀，再用新 operationId 通过 `beat_append` 重写；不要手改 artifact。'
+      : '- 写错了、作者说"这一段不行、重写"：`beat_revert`（退第 N 段 = 正文截到它的起点，这一段和它后面所有段一起作废；返回的话就是让模型从哪重写）。作者也可以自己敲 `/beat revert`。',
     '- 作者改主意但没写错：`beat_adjust` 的 `waive` / `supersede`，必须写 reason。',
     '',
     '## 作者插的岔路',
@@ -110,7 +159,9 @@ const SKILL = {
     '',
     '- 不先写完再补问；不攒一批决策点一次问完。',
     '- 不用环境描写凑决策点；不为凑数拆节点。',
-    '- 不静默覆盖已经写过的正文；要改就按"改与退"走。',
+    SEGMENT_LOOP_ENABLED
+      ? '- 不静默覆盖正文或段落 artifact；segment-loop 内容要按"改与退"回退后重写。'
+      : '- 不静默覆盖已经写过的正文；要改就按"改与退"走。',
     '- 作者选的选项会改掉账本里的既有设定时，不替他说"可以"：先问"是否允许这次剧情改这个设定"，同意后才 `beat_next(confirmCanon: true)`。',
     '- 不依赖 novel-forge；`format:\'novel-forge\'` 只是可选导出。',
   ].join('\n'),
@@ -148,7 +199,7 @@ function effectiveOn(ctx, manualOn, key) {
   }
 }
 
-const BEAT_TOOL_NAMES = toolDefinitions().map((definition) => definition.name)
+const BEAT_TOOL_NAMES = toolDefinitions({ segmentLoop: SEGMENT_LOOP_ENABLED }).map((definition) => definition.name)
 
 /** 从账本里推断"当前正在写哪一章、还有几个决策没拍板"。 */
 export function gateFromBook(data) {
@@ -309,18 +360,21 @@ export async function apply(ctx) {
     const bodyRoots = settings.bodyRoots ?? DEFAULT_BODY_ROOTS
 
     let gate = { chapter: null, open: 0, chapters: {} }
-    if (on) {
-      try {
-        const active = await readActiveBook(dir)
-        gate = gateFromBook(active?.data ?? null)
-      } catch {
-        // 账本读不了不让 guard 误拦，保持上一次的判定。
-        gate = gateCache.get(agent.id) ?? gate
-      }
+    let active = null
+    let writePaused = false
+    try {
+      active = await readActiveBook(dir)
+      if (on) gate = gateFromBook(active?.data ?? null)
+      writePaused = Boolean(active?.book && isBookWriteBlockedSync(dir, active.book))
+    } catch {
+      // 无法确认事务恢复状态时，对受保护正文写 fail closed。
+      writePaused = true
+      gate = gateCache.get(agent.id) ?? gate
     }
+    const activeBook = active?.book ?? gateCache.get(agent.id)?.activeBook ?? null
 
     modeCache.set(agent.id, on)
-    gateCache.set(agent.id, { on, bodyRoots, dir, ...gate })
+    gateCache.set(agent.id, { on, bodyRoots, dir, activeBook, writePaused, ...gate })
     ensureSkill(agent, on)
     applyRestriction(agent, on)
     return { on, dir, bodyRoots, ...gate }
@@ -425,7 +479,7 @@ export async function apply(ctx) {
     ctx.effect(() => ctx.provide('novelBeat', novelBeatApi))
   }
 
-  for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask) })) {
+  for (const definition of toolDefinitions({ ask, askAvailable: Boolean(ask), segmentLoop: SEGMENT_LOOP_ENABLED })) {
     ctx.effect(() => ctx.tools.register(definition, {
       when: (context) => effectiveOn(ctx, modeCache.get(sessionKey(context)) === true, sessionKey(context)),
     }))
@@ -605,7 +659,7 @@ export async function apply(ctx) {
         const id = agent?.id
         if (!id) return undefined
         const cached = gateCache.get(id)
-        if (!cached?.on) return undefined
+        if (!cached?.on && !cached?.writePaused) return undefined
 
         const cwd = syncDirFor(agent) ?? cached.dir
         if (!cwd) return undefined
