@@ -283,3 +283,19 @@ test('作者原文超过 2000 字时，面板截断并标记（完整原文仍�
   assert.equal(decision.chosen.customText.length, 2001, '2000 字 + 省略号')
   assert.equal(decision.answerTextTruncated, true)
 })
+
+test('changes 投影保留中文标签（entityLabel/keyLabel/fromLabel/toLabel）', () => {
+  const data = fixture()
+  const decision = data.decisions.find((entry) => entry.id === 'b10-1')
+  decision.chosen.changes[0] = {
+    ...decision.chosen.changes[0],
+    entityLabel: '雪清河', keyLabel: '对陈凡的目的',
+    from: 'undecided', fromLabel: '还没定', toLabel: '收入东宫',
+  }
+  const chapter = buildChapter({ book: BOOK, data, chapter: 10 })
+  const b101 = chapter.decisions.find((entry) => entry.id === 'b10-1')
+  assert.equal(b101.chosen.changes[0].entityLabel, '雪清河')
+  assert.equal(b101.chosen.changes[0].keyLabel, '对陈凡的目的')
+  assert.equal(b101.chosen.changes[0].fromLabel, '还没定')
+  assert.equal(b101.chosen.changes[0].toLabel, '收入东宫')
+})

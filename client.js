@@ -5,7 +5,7 @@ window.__ModuleLoader__.load({
     const h = React.createElement
 
     // 版本号只在这里出现一次；test/client-version.test.mjs 会核对它和 package.json 一致。
-    const PLUGIN_VERSION = '0.12.0'
+    const PLUGIN_VERSION = '0.12.1'
 
     // Keep this contract in sync with lib/remote-contract.js. It is duplicated
     // because this browser factory cannot import a relative Host module.
@@ -1564,6 +1564,7 @@ body .beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-colo
           close()
           return
         }
+        if (embedded) return
         if (event.key !== 'Tab') return
         const focusable = [...(event.currentTarget?.querySelectorAll?.('button:not([disabled]), summary, a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? [])]
         if (!focusable.length) {
@@ -1975,7 +1976,7 @@ body .beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-colo
       const [searchQ, setSearchQ] = React.useState('')
       const PAPERS = [['auto', '跟随'], ['xuan', '宣纸'], ['mi', '米白'], ['hui', '灰白'], ['qing', '青瓷'], ['wu', '淡雾'], ['ye', '夜墨']]
       const [paper, setPaper] = React.useState(() => {
-        try { return localStorage.getItem('dsh-novel-beat:paper') || 'auto' } catch { return 'xuan' }
+        try { return localStorage.getItem('dsh-novel-beat:paper') || 'auto' } catch { return 'auto' }
       })
       const [paperOpen, setPaperOpen] = React.useState(false)
       const choosePaper = (name) => {
@@ -2569,7 +2570,7 @@ body .beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-colo
             h('div', { className: 'beat-stage-head', key: 'head' }, [
               h('span', { className: 'beat-stage-title', key: 't' }, ['当前分镜：', h('b', { key: 'b' }, decision.title)]),
               h('span', { className: 'beat-spacer', key: 's' }),
-              h('button', { key: 'x', type: 'button', className: 'beat-stage-close', onClick: () => setSelected(null), title: '收起详情', 'aria-label': '收起详情' }, '×'),
+              h('button', { key: 'x', type: 'button', className: 'beat-stage-close', onClick: () => { setSelected(null); decisionReturnFocusRef.current?.focus?.() }, title: '收起详情', 'aria-label': '收起详情' }, '×'),
             ]),
             h(BeatDecisionDetail, {
               key: 'detail',
