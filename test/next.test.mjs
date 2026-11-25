@@ -190,6 +190,42 @@ test('beat_next：选项和自定义文本同时回来 → 歧义拒绝，不落
   assert.equal(data.decisions[0].status, 'proposed');
 });
 
+test('beat_next：作者自定待补时 beat_plan(reset:true) 能重开，不留孤儿凭据', async (t) => {
+  const dir = await tempDir(t);
+  await plan(dir, 1, [beat('要不要救', '旁观', '出手')]);
+  const { ask } = askReturning({ 'b1-1': { custom: '先不动，等他自己送上门' } });
+  await executeNext({ dir, book: BOOK, chapter: 1 }, { agent: AGENT }, { ask });
+
+  const rebuilt = await executePlan({
+    dir, book: BOOK, chapter: 1, reset: true, beats: [beat('要不要救', '旁观', '出手')],
+  });
+  assert.equal(rebuilt.ok, true);
+  const { data } = await readBookData(dir, BOOK);
+  assert.equal(data.requests.length, 0, '重开时不能留下指向已删决策的凭据');
+  assert.equal(data.decisions.length, 1, '旧决策被清掉，新决策立起来');
+  assert.equal(data.decisions[0].status, 'proposed');
+});
+
+test('beat_decide：超长作者原文落账后再重试仍幂等（不用被截断的 label 比对）', async (t) => {
+  const dir = await tempDir(t);
+  await plan(dir, 1, [beat('要不要救', '旁观', '出手')]);
+  const long = '先不动，等他自己送上门。'.repeat(10);
+  assert.ok(long.length > 80);
+  const { ask } = askReturning({ 'b1-1': { custom: long } });
+  await executeNext({ dir, book: BOOK, chapter: 1 }, { agent: AGENT }, { ask });
+
+  const args = {
+    dir, book: BOOK, chapter: 1, id: 'b1-1', choice: long,
+    changes: [{ entity: '林昭', key: '要不要救', from: '旁观', to: '等他自己送上门', evidence: ['证据一'] }],
+  };
+  const first = await executeDecide(args);
+  assert.equal(first.status, 'committed');
+  const second = await executeDecide(args);
+  assert.equal(second.idempotent, true, '同一原文重试要给成功回执，不能报已拍板');
+  const { data } = await readBookData(dir, BOOK);
+  assert.equal(data.decisions[0].chosen.customText, long);
+});
+
 test('beat_next：拍板并登记段落后才算这一段结束，全部完成后 done', async (t) => {
   const dir = await tempDir(t);
   await plan(dir, 1, [beat('要不要救', '旁观', '出手')]);

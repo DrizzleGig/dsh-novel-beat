@@ -199,6 +199,25 @@ test('M4a getStatus：answered + pendingChoice 与 gate 一致，映射为 pendi
   assert.deepEqual(result.pending, [{ id: 'b-1', status: 'answered', title: '是否救人' }]);
 });
 
+test('0.11 getStatus：作者自定待补也映射为 pending_confirm，不假装可以继续写', async (t) => {
+  const { dir, data, service } = await fixture(t, (data) => {
+    decision(data, {
+      status: 'answered',
+      answerText: '先退出去守三天',
+      pendingCustom: { text: '先退出去守三天', at: AT, requestId: 'q-custom' },
+    });
+    data.requests.push({
+      id: 'q-custom', decisionId: 'b-1', chapter: 1, askedAt: AT, answeredAt: AT,
+      options: [], answer: { selected: [], custom: '先退出去守三天' }, origin: 'author',
+    });
+  });
+  const result = await service.getStatus({ cwd: dir, chapter: 1 });
+  assert.equal(result.chapterState, 'pending_confirm');
+  assert.equal(result.stateDetail.pendingCustom, 1);
+  assert.equal(result.stateDetail.open, 0);
+  assert.deepEqual(result.stateDetail, gateFromBook(data).chapters['1']);
+});
+
 test('M4a gateFromBook：待确认与 proposed 分开计数，正文写入仍拦截', () => {
   for (const [status, pendingChoice, open, pendingConfirm] of [
     ['answered', { label: '救人' }, 0, 1],

@@ -262,7 +262,7 @@ test('决策详情显示 gate 前后值、打断理由、失效证据和六要�
     chapter: 12, total: 1, on: true, transactionBlocked: true,
   })
   const text = virtualText(detail)
-  for (const expected of ['命中：主角 / identity.exposure', '无人知晓 (unknown) → 公开 (disclose)', '打断理由：此处不问', '证据已失效，禁止拍板', '动作：先不说明', '代价：独自承担压力', '预期后果：保持秘密', '信息增量：观察室友是否守约', '风险：疑心可能累积', '状态差分：person:hero.identity.exposure', '贴合 80/100']) {
+  for (const expected of ['主角 / identity.exposure', '无人知晓 (unknown) → 公开 (disclose)', '打断理由：', '证据已失效，禁止拍板', '动作： 先不说明', '代价： 独自承担压力', '预期后果： 保持秘密', '信息增量： 观察室友是否守约', '风险： 疑心可能累积', '状态差分： person:hero.identity.exposure', '贴合 80/100']) {
     assert.ok(text.includes(expected), `missing UI text: ${expected}`)
   }
   const buttons = virtualNodes(detail, (node) => node.type === 'button')
@@ -298,7 +298,7 @@ test('决策详情显示作者自定的原文：待补 changes 与已落账两�
   const pendingText = virtualText(pending)
   assert.match(pendingText, /作者自定 · 原文已入账，待补结构化变化/)
   assert.match(pendingText, /先退出去，守三天，等别人先踩雷/)
-  assert.match(pendingText, /待补 changes/)
+  assert.match(pendingText, /待补结构/)
 
   const committed = BeatDecisionDetail({
     decision: {

@@ -11,7 +11,7 @@ legacy 工具都接受两个公共参数：
 
 ## 0.11.0 作者自定拍板、文风写法基线与段落循环（本版）
 
-**空白/自己写**：`beat_next` 的提问卡由宿主渲染，选项下面固定带自由输入行（`answer.custom`）。插件在 `detail` 里明确提示"最后一行可以直接写你自己的走向"，不另造 sentinel 选项，避免出现"按钮 + 输入框"两个入口。作者只写自由文本时，`commitAnswers` 把决策置 `answered`、原文写入 `answerText` 与 `pendingCustom`，不做任何状态编造；此时写正文会被闸门以 `PENDING_STRUCTURED_CHANGES` 拦下，直到模型用 `beat_decide`（choice 用作者原话 + `changes`）把决策落成 `committed(source: 'author-custom')`。右栏的决策地图、时间线与决策详情都会标"作者自定"并显示原文；回退时按旧线归档保留原文与 changes。
+**空白/自己写**：`beat_next` 的提问卡由宿主渲染，选项下面固定带自由输入行（`answer.custom`）。插件在 `detail` 里明确提示"最后一行可以直接写你自己的走向"，不另造 sentinel 选项，避免出现"按钮 + 输入框"两个入口。作者只写自由文本时，`commitAnswers` 把决策置 `answered`、原文写入 `answerText` 与 `pendingCustom`，不做任何状态编造；此时写正文会被闸门以 `PENDING_STRUCTURED_CHANGES` 拦下，直到模型用 `beat_decide` 补结构落成 `committed(source: 'author-custom')`：v3 决策要 `optionDraft`（完整六要素），legacy 决策（无 gate）要 `changes`。右栏的决策地图、时间线与决策详情都会标"作者自定"并显示原文。回退时作者原文仍留在 `requests[].answer.custom`，keep 路径保留 `chosen.customText` 与来源；旧线记录本身只带摘要（label/impact），不承诺整份回放。
 
 **文风写法基线（voiceGuidance）**：`beat_plan`、`beat_next`、`beat_segment`、`beat_append`、`beat_verify` 的成功结果会附带 `voiceGuidance`：可用时含 ≤1200 字的已确认文风摘要、`profileId/profileVersion/revision/digest`；不可用时含 `reason` 与中性说明。模型据此写选项的 `action/costs/outcomes` 的切入点、语气与代价感。判定"可用"只要求 voice 只读接口报告 `voice.brief` 能力、存在 `status: 'confirmed'` 且带版本的档案、`getBrief` 回执确认同一档案版本；**不要求 voice 提供会话开关**（0.2.2 没有）。拍板侧提供 `/beat voice auto|off`，`off` 时强制中性且不读 voice。文风只影响措辞，不得改写事实、伪造证据或把风格差异变成难度差异。
 

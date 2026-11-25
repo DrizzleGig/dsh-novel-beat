@@ -200,7 +200,7 @@ test('remote.chapter 只读接 voice 文风排序，接口缺少本会话开关�
   assert.equal(withVoice.voiceFit.available, true, '0.11.0：以已确认档案为同意信号，不再依赖 isEnabled')
   assert.equal(withVoice.voiceFit.profileVersion, '2.4')
   assert.deepEqual(withVoice.decisions[0].options.map((option) => option.label), ['暂缓说明', '立即告知'])
-  assert.equal(briefCalls, 1, '已确认文风会被缓存，同一会话不重复读简报')
+  assert.equal(briefCalls, 1, '单次 chapter 投影只读一次简报（这里没有跨会话缓存）')
   assert.deepEqual(decision.gate, withVoice.decisions[0].gate)
   for (const option of decision.options) {
     const baseline = withVoice.decisions[0].options.find((entry) => entry.label === option.label)

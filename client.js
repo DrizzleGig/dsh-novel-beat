@@ -920,136 +920,230 @@ body[data-ds-dark-theme] .beat-root{
 .beat-sheet-actions .beat-btn[data-p="1"],.beat-sheet-actions .beat-btn[data-p="1"][data-danger="1"]{background:var(--beat-red);border-color:var(--beat-red);color:var(--beat-on-accent)}
 @media (prefers-reduced-motion:reduce){.beat-root *, .beat-root *:before, .beat-root *:after{transition-duration:0s!important;animation-duration:.01ms!important}}
 
-/* ===== 0.11.0 批校本：只换视觉与交互，不动信息架构 ===== */
+/* ===== 0.11.0 批校本 v2：只换视觉与交互，不动信息架构 =====
+   版式：刊物式台账。衬线标题 + 无衬线数据；朱砂只给"待你定/危险"，
+   青玉只给"已落账"，赭石给"待复核"，墨灰给"旧账"。 */
+
 .beat-root{
-  --beat-paper:#f6f2e9;--beat-paper-2:#eee7d8;--beat-card:#fffdf6;
-  --beat-ink:#191713;--beat-ink-2:#5d564a;--beat-ink-3:#8a8070;
-  --beat-line:rgba(25,23,19,.10);--beat-line-2:rgba(25,23,19,.20);
-  --beat-red:#b23a2a;--beat-red-soft:rgba(178,58,42,.08);--beat-red-line:rgba(178,58,42,.30);
-  --beat-jade:#2f6f5e;--beat-jade-soft:rgba(47,111,94,.08);--beat-jade-line:rgba(47,111,94,.28);
-  --beat-amber:#8f5f18;--beat-amber-soft:rgba(143,95,24,.09);--beat-amber-line:rgba(143,95,24,.30);
+  --beat-paper:#f7f2e8; --beat-paper-2:#efe7d6; --beat-card:#fffdf7;
+  --beat-ink:#191612; --beat-ink-2:#5f574b; --beat-ink-3:#948a78;
+  --beat-line:rgba(25,22,18,.09); --beat-line-2:rgba(25,22,18,.18);
+  --beat-red:#ad3a28; --beat-red-soft:rgba(173,58,40,.07); --beat-red-line:rgba(173,58,40,.28);
+  --beat-jade:#2e6b58; --beat-jade-soft:rgba(46,107,88,.07); --beat-jade-line:rgba(46,107,88,.26);
+  --beat-amber:#8e5f1b; --beat-amber-soft:rgba(142,95,27,.08); --beat-amber-line:rgba(142,95,27,.28);
   --beat-ui:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
   --beat-serif:"Source Han Serif SC","Noto Serif CJK SC","Songti SC","STSong","SimSun",serif;
-  font-family:var(--beat-ui);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  --beat-mono:"Cascadia Mono",Consolas,ui-monospace,monospace;
+  font-family:var(--beat-ui); font-size:12.5px; color:var(--beat-ink);
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 55%,transparent),transparent 190px);
 }
 body[data-ds-dark-theme] .beat-root{
-  --beat-paper:#131315;--beat-paper-2:#1a1a1e;--beat-card:#1e1e23;
-  --beat-ink:#f2eee4;--beat-ink-2:#b3aa9b;--beat-ink-3:#857c6d;
-  --beat-line:rgba(242,238,228,.10);--beat-line-2:rgba(242,238,228,.20);
-  --beat-red:#e0603f;--beat-jade:#5cb39c;--beat-amber:#d6a24d;
+  --beat-paper:#121214; --beat-paper-2:#1a1a1e; --beat-card:#1d1d22;
+  --beat-ink:#f3eee2; --beat-ink-2:#b5ab99; --beat-ink-3:#867d6d;
+  --beat-line:rgba(243,238,226,.10); --beat-line-2:rgba(243,238,226,.20);
+  --beat-red:#e06a4b; --beat-jade:#63b79f; --beat-amber:#d7a24e;
   --beat-red-soft:color-mix(in srgb,var(--beat-red) 12%,transparent);
-  --beat-red-line:color-mix(in srgb,var(--beat-red) 34%,transparent);
+  --beat-red-line:color-mix(in srgb,var(--beat-red) 32%,transparent);
   --beat-jade-soft:color-mix(in srgb,var(--beat-jade) 12%,transparent);
-  --beat-jade-line:color-mix(in srgb,var(--beat-jade) 30%,transparent);
+  --beat-jade-line:color-mix(in srgb,var(--beat-jade) 28%,transparent);
   --beat-amber-soft:color-mix(in srgb,var(--beat-amber) 12%,transparent);
-  --beat-amber-line:color-mix(in srgb,var(--beat-amber) 32%,transparent);
+  --beat-amber-line:color-mix(in srgb,var(--beat-amber) 30%,transparent);
+  background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 85%,transparent),transparent 190px);
 }
-.beat-head{padding:16px 18px 0}
-.beat-eyebrow{height:auto;font-size:10px;letter-spacing:.2em;color:var(--beat-ink-3)}
-.beat-eyebrow:before{width:20px;height:1px;background:var(--beat-red);opacity:.85}
-.beat-eyes{margin-top:10px;gap:14px}
-.beat-book{font-family:var(--beat-serif);font-size:19px;font-weight:600;letter-spacing:.01em;line-height:1.3}
-.beat-sub{margin-top:6px;gap:7px;font-size:10.5px;color:var(--beat-ink-2)}
-.beat-mode{font-size:10px;letter-spacing:.02em}
-.beat-ring{width:46px;height:46px}
-.beat-ring svg{width:46px;height:46px}
-.beat-ring .ctr b{font-size:13px}
-.beat-stats{height:46px;margin-top:15px}
-.beat-stat{padding:0 11px;gap:5px}
-.beat-stat b{font-size:16px;font-weight:600;letter-spacing:-.01em}
-.beat-stat span{font-size:9.5px;letter-spacing:.04em;color:var(--beat-ink-3)}
-.beat-tabs{margin-top:13px;gap:22px}
-.beat-tab{height:40px;padding:0;font-size:12px;letter-spacing:.03em;color:var(--beat-ink-2)}
-.beat-tab svg{width:13px;height:13px;opacity:.7}
-.beat-tab b{font-size:9.5px;background:transparent;border:0;padding:0;line-height:1.2;color:var(--beat-ink-3)}
-.beat-tab[data-a="1"]{font-weight:600;color:var(--beat-ink)}
-.beat-tab[data-a="1"]:after{left:0;right:0;height:2px;border-radius:2px 2px 0 0}
-.beat-tab[data-a="1"] b{color:var(--beat-red)}
-.beat-filters{padding:12px 18px 10px;gap:7px}
-.beat-chip{height:26px;padding:0 11px;font-size:10.5px;letter-spacing:.02em;border-radius:13px}
-.beat-sort{font-size:10px;letter-spacing:.03em}
-.beat-search{height:40px;padding:0 18px;gap:9px}
-.beat-search-input{font-size:12px;font-family:var(--beat-ui)}
-.beat-search-head{padding:12px 0 8px;font-size:9.5px;letter-spacing:.08em}
-.beat-sr{padding:12px 0}
-.beat-sr-title{font-family:var(--beat-serif);font-size:12.5px;margin-top:4px;line-height:1.5}
-.beat-sr-choice{font-size:10.5px}
-.beat-chap{min-height:78px;padding:12px 18px;gap:14px}
-.beat-chap-no{width:34px;font-size:22px;font-weight:300;letter-spacing:-.02em;color:var(--beat-ink-3)}
-.beat-chap-name{font-family:var(--beat-serif);font-size:14px;font-weight:600;line-height:1.35}
-.beat-chap[data-current="1"] .beat-chap-name{font-size:14.5px}
-.beat-chap-meta{margin-top:4px;font-size:10px;gap:6px}
-.beat-chap-state{font-size:10px;letter-spacing:.03em}
-.beat-segbar{margin-top:7px;gap:3px}
-.beat-segbar i{height:3px;max-width:20px}
-.beat-decs{padding:6px 18px 10px 68px}
-.beat-decs:before{left:22px;top:4px;bottom:12px;width:1px;background:var(--beat-line-2)}
-.beat-dec{padding:11px 2px 11px 0;gap:10px}
-.beat-dec-title{font-family:var(--beat-serif);font-size:13px;line-height:1.5;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.beat-dec-choice{font-size:11px;line-height:1.55;margin-top:3px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.beat-dec-meta{margin-top:6px;font-size:9.5px;gap:6px}
-.beat-kind{height:17px;font-size:9px;line-height:15px}
-.beat-dec-badge{font-size:9.5px;letter-spacing:.03em}
-.beat-seal{width:21px;height:21px;font-size:10.5px;border-radius:3px;transform:rotate(-4deg)}
-.beat-dec[data-a="1"]{padding:11px 10px 11px 12px;border-radius:8px;box-shadow:0 1px 0 color-mix(in srgb,var(--beat-ink) 4%,transparent),0 10px 24px color-mix(in srgb,var(--beat-ink) 8%,transparent)}
-.beat-detail{border-radius:12px;box-shadow:0 14px 34px color-mix(in srgb,var(--beat-ink) 12%,transparent)}
-.beat-detail-inner{padding:16px 16px}
-.beat-detail-title{font-family:var(--beat-serif)}
-.beat-detail-top{font-size:9.5px;padding-right:42px}
-.beat-detail-stamp{width:36px;height:36px;font-size:9.5px}
-.beat-gate-title,.beat-opt-heading,.beat-evidence-status{letter-spacing:.04em}
-.beat-opt-label{font-family:var(--beat-serif);font-size:12px}
-.beat-opt-field{font-size:10.5px;line-height:1.6}
-.beat-opt-letter{font-size:10px}
-.beat-sheet{padding:14px 18px calc(18px + env(safe-area-inset-bottom))}
-.beat-sheet-sub{font-size:11px;line-height:1.6}
-.beat-sheet-k{font-size:9px;letter-spacing:.06em}
-.beat-sheet-v{font-size:10px;line-height:1.6}
-.beat-sheet-actions .beat-btn{min-height:38px;font-size:11px}
-.beat-foot{height:32px;padding:0 18px;font-size:9.5px;letter-spacing:.03em}
-.beat-tl-entry{padding:11px 0}
-.beat-tl-time{font-size:9.5px}
-.beat-tl-summary{font-size:11.5px;line-height:1.55}
-.beat-hl-title{font-family:var(--beat-serif);font-size:13px}
-.beat-hl-item-t{font-size:11.5px;line-height:1.5}
-.beat-hl-item-d{font-size:10px;line-height:1.55}
-.beat-voice-status{padding:8px 0;font-size:9.5px}
-.beat-empty b{font-family:var(--beat-serif);font-size:13px}
-.beat-empty div{font-size:10.5px;line-height:1.6}
-.beat-custom{margin-top:8px;padding:10px 12px;border:1px solid var(--beat-red-line);border-left:2px solid var(--beat-red);border-radius:6px;background:var(--beat-red-soft)}
-.beat-custom-k{font-size:9px;letter-spacing:.08em;color:var(--beat-red);margin-bottom:5px}
-.beat-custom-text{font-family:var(--beat-serif);font-size:12px;line-height:1.65;color:var(--beat-ink);white-space:pre-wrap;overflow-wrap:anywhere}
-.beat-custom-note{margin-top:6px;font-size:9.5px;color:var(--beat-ink-3)}
-.beat-kind-custom{border-color:var(--beat-red-line);background:var(--beat-red-soft);color:var(--beat-red)}
-.beat-kind-loop{margin-left:4px;border-color:var(--beat-line-2);background:transparent;color:var(--beat-ink-3);font-size:8.5px;letter-spacing:.02em}
 
-/* 批校本 · 版面细节 */
-.beat-root{background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 55%,transparent),transparent 148px)}
-body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,color-mix(in srgb,var(--beat-paper-2) 70%,transparent),transparent 148px)}
-.beat-head{padding-top:18px}
-.beat-eyebrow{color:var(--beat-ink-3)}
-.beat-book{font-size:20px;line-height:1.28}
-.beat-stats{height:52px;margin-top:16px;border-top:1px solid var(--beat-line-2);border-bottom:1px solid var(--beat-line)}
-.beat-stat{flex-direction:column;align-items:flex-start;justify-content:center;gap:0;padding:0 12px}
-.beat-stat b{font-size:21px;font-weight:500;letter-spacing:-.02em;line-height:1.1}
-.beat-stat span{font-size:9px;letter-spacing:.12em;color:var(--beat-ink-3);margin-top:1px}
-.beat-tabs{margin-top:14px;gap:26px;border-bottom:1px solid var(--beat-line-2)}
-.beat-tab{height:42px;letter-spacing:.05em}
-.beat-tab[data-a="1"]:after{height:2px;background:var(--beat-red)}
-.beat-tab:hover{color:var(--beat-ink)}
-.beat-filters{padding-top:13px}
-.beat-chip[data-a="1"]{background:var(--beat-ink);border-color:var(--beat-ink);color:var(--beat-paper)}
-.beat-chap{position:relative}
-.beat-chap[data-current="1"]{background:linear-gradient(90deg,color-mix(in srgb,var(--beat-red-soft) 70%,transparent),transparent 58%)}
-.beat-chap-name{letter-spacing:.01em}
-.beat-chap-meta b{color:var(--beat-ink-2)}
-.beat-chap-state{font-size:9.5px;letter-spacing:.06em}
-.beat-dec-title{letter-spacing:.01em}
-.beat-dec[data-state="committed"] .beat-seal{transform:rotate(-5deg)}
-.beat-voice-status{display:block;padding:9px 0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line);background:transparent;color:var(--beat-ink-3);line-height:1.6}
-.beat-voice-status b{display:block;font-weight:500;color:var(--beat-ink-2);font-size:9px;letter-spacing:.1em;margin-bottom:1px}
-.beat-voice-status span{display:block;font-size:9.5px}
-.beat-foot{border-top:1px solid var(--beat-line-2);color:var(--beat-ink-3);letter-spacing:.08em}
+/* 版心 */
+.beat-head{padding:22px 22px 0;background:transparent}
+.beat-top{gap:8px}
+.beat-eyebrow{height:auto;font-size:9.5px;letter-spacing:.28em;color:var(--beat-ink-3)}
+.beat-eyebrow:before{width:24px;height:1px;background:var(--beat-red);opacity:.9}
+.beat-eyes{margin-top:8px;gap:12px;align-items:flex-start}
+.beat-book{font-family:var(--beat-serif);font-size:25px;font-weight:600;line-height:1.26;letter-spacing:-.005em}
+.beat-sub{margin-top:9px;gap:8px;font-size:11px;color:var(--beat-ink-2);letter-spacing:.01em}
+.beat-sub b{font-family:var(--beat-mono);font-weight:500;color:var(--beat-ink)}
+.beat-mode{font-size:10.5px;gap:5px}
+.beat-ring{width:44px;height:44px;flex:none;opacity:.92}
+.beat-ring svg{width:44px;height:44px}
+.beat-ring .ctr b{font-size:12.5px;font-weight:600}
+.beat-ring .ctr span{font-size:8px;letter-spacing:.06em}
+.beat-stats{height:auto;display:flex;align-items:baseline;margin-top:18px;padding:0 0 12px;border-top:0;border-bottom:1px solid var(--beat-line-2);background:transparent;gap:0}
+.beat-stat{flex:0 0 auto;flex-direction:row;align-items:baseline;gap:5px;padding:0 16px 0 0;border-left:0}
+.beat-stat+.beat-stat{border-left:1px solid var(--beat-line);padding-left:16px;margin-left:0}
+.beat-stat:first-child{padding-left:0}
+.beat-stat b{font-family:var(--beat-ui);font-size:15px;font-weight:600;letter-spacing:0;line-height:1.2;color:var(--beat-ink)}
+.beat-stat.t-jade b{color:var(--beat-jade)}
+.beat-stat.t-amber b{color:var(--beat-amber)}
+.beat-stat span{font-size:9.5px;letter-spacing:.14em;color:var(--beat-ink-3)}
+
+/* 导航 */
+.beat-tabs{margin-top:16px;gap:26px;border-bottom:1px solid var(--beat-line-2)}
+.beat-tab{height:44px;padding:0;font-size:13px;letter-spacing:.06em;color:var(--beat-ink-3);font-weight:400}
+.beat-tab svg{width:13px;height:13px;opacity:.6}
+.beat-tab b{font-family:var(--beat-ui);font-size:9.5px;letter-spacing:0;background:transparent;border:0;padding:0;line-height:1;color:var(--beat-ink-3);transform:translateY(-4px);display:inline-block}
+.beat-tab:hover{color:var(--beat-ink-2)}
+.beat-tab[data-a="1"]{color:var(--beat-ink);font-weight:600}
+.beat-tab[data-a="1"]:after{left:0;right:0;height:2px;border-radius:0}
+.beat-tab[data-a="1"] b{color:var(--beat-red)}
+
+/* 搜索与筛选 */
+.beat-search{height:42px;padding:0 22px;gap:9px}
+.beat-search-ico{width:14px;height:14px;color:var(--beat-ink-3)}
+.beat-search-input{font:12px var(--beat-ui);letter-spacing:.01em}
+.beat-filters{padding:14px 22px 12px;gap:18px;align-items:baseline}
+.beat-chip{height:auto;padding:0 0 3px;border:0;border-bottom:1px solid transparent;border-radius:0;background:transparent;font-size:11.5px;letter-spacing:.02em;color:var(--beat-ink-3);gap:5px}
+.beat-chip:hover{background:transparent;color:var(--beat-ink-2)}
+.beat-chip[data-a="1"]{background:transparent;border-bottom-color:var(--beat-ink);color:var(--beat-ink);font-weight:600}
+.beat-chip b{font-family:var(--beat-ui);font-size:9.5px;color:var(--beat-ink-3);transform:translateY(-3px);display:inline-block}
+.beat-chip[data-a="1"] b{color:var(--beat-red)}
+.beat-sort{margin-left:auto;font-size:9.5px;letter-spacing:.08em;color:var(--beat-ink-3)}
+.beat-search-results{padding:0 22px 12px}
+.beat-search-head{padding:14px 0 8px;font-family:var(--beat-ui);font-size:9.5px;letter-spacing:.12em;color:var(--beat-ink-3)}
+.beat-sr{padding:13px 0;border-bottom:1px solid var(--beat-line)}
+.beat-sr:hover{background:transparent}
+.beat-sr-top{font-family:var(--beat-ui);font-size:9.5px;letter-spacing:.04em}
+.beat-sr-kind{font-size:9px;padding:0 5px;border-radius:2px}
+.beat-sr-title{font-family:var(--beat-serif);font-size:13px;margin-top:5px;line-height:1.5}
+.beat-sr-choice{font-size:11px;color:var(--beat-ink-2)}
+.beat-sr-snippet{font-family:var(--beat-mono);font-size:9.5px;color:var(--beat-ink-3);margin-top:4px;line-height:1.6}
+
+/* 章节：页边编号 + 衬线标题 */
+.beat-list{padding:2px 0 26px}
+.beat-chap{min-height:92px;padding:17px 22px;gap:16px;border-bottom:1px solid var(--beat-line);transition:background .16s}
+.beat-chap:hover{background:color-mix(in srgb,var(--beat-paper-2) 40%,transparent)}
+.beat-chap:before{width:0}
+.beat-chap[data-open="1"]{background:color-mix(in srgb,var(--beat-card) 80%,var(--beat-paper));border-bottom-color:transparent}
+.beat-chap[data-open="1"]:before{width:2px;background:var(--beat-red)}
+.beat-chap[data-current="1"]{background:linear-gradient(90deg,color-mix(in srgb,var(--beat-red-soft) 80%,transparent),transparent 62%)}
+.beat-chap-no{width:38px;font-family:var(--beat-serif);font-size:23px;font-weight:400;color:var(--beat-ink-3);letter-spacing:-.02em;text-align:left}
+.beat-chap[data-current="1"] .beat-chap-no,.beat-chap[data-open="1"] .beat-chap-no{color:var(--beat-red)}
+.beat-chap-name{font-family:var(--beat-serif);font-size:16.5px;font-weight:600;line-height:1.35;letter-spacing:0}
+.beat-chap[data-current="1"] .beat-chap-name{font-size:17px}
+.beat-chap-meta{margin-top:6px;font-size:10.5px;gap:7px;color:var(--beat-ink-3);letter-spacing:.02em}
+.beat-chap-meta b{font-family:var(--beat-ui);font-weight:600;color:var(--beat-ink-2)}
+.beat-segbar{margin-top:8px;gap:3px}
+.beat-segbar i{height:2px;max-width:22px;border-radius:0}
+.beat-chap-state{font-size:10px;letter-spacing:.1em}
+.beat-badge{font-family:var(--beat-ui)}
+.beat-chev{width:11px;height:11px;opacity:.6}
+.beat-chap[data-open="1"] .beat-chev{opacity:1}
+
+/* 决策：印章 + 衬线标题 + 一行摘要 */
+.beat-decs{padding:4px 22px 14px 76px}
+.beat-decs:before{left:37px;top:6px;bottom:16px;width:1px;background:var(--beat-line-2);opacity:.9}
+.beat-dec{padding:15px 2px 15px 0;gap:12px;border-bottom:1px solid var(--beat-line);align-items:flex-start}
+.beat-dec:last-child{border-bottom:0}
+.beat-dec:hover{background:color-mix(in srgb,var(--beat-paper-2) 35%,transparent)}
+.beat-seal{width:24px;height:24px;font-family:var(--beat-serif);font-size:11.5px;font-weight:600;border-radius:3px;margin-top:1px;transform:rotate(-3deg)}
+.beat-dec-title{font-family:var(--beat-serif);font-size:14.5px;line-height:1.5;letter-spacing:0}
+.beat-dec-choice{font-family:var(--beat-serif);font-size:12px;line-height:1.6;margin-top:5px;color:var(--beat-ink-2)}
+.beat-dec-meta{margin-top:8px;font-size:10px;gap:7px;color:var(--beat-ink-3);letter-spacing:.03em}
+.beat-kind{height:auto;padding:0;border:0;background:transparent;color:var(--beat-ink-3);font-size:10px;letter-spacing:.06em}
+.beat-kind-custom{color:var(--beat-red);background:transparent;border:0;font-weight:600}
+.beat-kind-loop{color:var(--beat-ink-3);font-size:9.5px}
+.beat-dec-badge{font-size:10px;letter-spacing:.08em}
+.beat-dec[data-a="1"]{background:var(--beat-card);border:1px solid var(--beat-line-2);border-left:2px solid var(--beat-red);border-radius:2px;padding:15px 14px;margin:8px 0;box-shadow:0 10px 26px color-mix(in srgb,var(--beat-ink) 7%,transparent)}
+.beat-dec[data-a="1"]:after{display:none}
+
+/* 详情：分节 + 拉引言 */
+.beat-detail{margin:10px 0 18px;border:1px solid var(--beat-line-2);border-radius:3px;background:var(--beat-card);box-shadow:0 18px 44px color-mix(in srgb,var(--beat-ink) 12%,transparent);overflow:hidden}
+.beat-detail:before{height:3px;background:var(--beat-red)}
+.beat-detail-inner{padding:22px 22px 20px}
+.beat-detail-top{font-size:9.5px;letter-spacing:.1em;color:var(--beat-ink-3);padding-right:40px}
+.beat-detail-close{width:26px;height:26px;font-size:15px;border-radius:2px;opacity:.7}
+.beat-detail-close:hover{opacity:1;background:var(--beat-paper-2)}
+.beat-detail-title{font-family:var(--beat-serif);font-size:21px;font-weight:600;line-height:1.42;margin:8px 0 6px;letter-spacing:0}
+.beat-detail-change{font-size:12px;line-height:1.65;color:var(--beat-ink-2)}
+.beat-detail-stamp{display:none}
+.beat-sec{margin-top:22px}
+.beat-sec-t{margin:0 0 10px;font-family:var(--beat-ui);font-size:10px;font-weight:600;letter-spacing:.22em;color:var(--beat-ink-3);display:flex;align-items:center;gap:10px}
+.beat-sec-t:after{content:"";flex:1;height:1px;background:var(--beat-line)}
+.beat-gate{display:flex;flex-direction:column;gap:7px}
+.beat-gate-row{display:flex;gap:12px;align-items:baseline}
+.beat-k{flex:0 0 auto;min-width:64px;font-size:10.5px;letter-spacing:.04em;color:var(--beat-ink-3)}
+.beat-v{flex:1;min-width:0;font-size:12px;line-height:1.6;color:var(--beat-ink);overflow-wrap:anywhere}
+.beat-gate-delta{font-family:var(--beat-mono);font-size:11px;letter-spacing:.01em}
+.beat-evidence-status{margin-top:2px;font-size:10.5px;line-height:1.6;letter-spacing:.02em}
+.beat-evidence{margin-top:8px}
+.beat-evidence summary{font-size:10.5px;color:var(--beat-ink-3);letter-spacing:.02em}
+.beat-evidence blockquote{margin:6px 0;padding-left:12px;border-left:2px solid var(--beat-line-2);font-family:var(--beat-serif);font-size:12px;line-height:1.7;color:var(--beat-ink-2)}
+.beat-evidence code{font-size:9.5px;color:var(--beat-ink-3);word-break:break-all}
+
+/* 当前选择：拉引言 */
+.beat-sec-choice .beat-cur{display:block;padding:2px 0 2px 16px;border-left:3px solid var(--beat-red);background:transparent}
+.beat-cur-mark{display:none}
+.beat-cur-k{font-size:10px;letter-spacing:.18em;color:var(--beat-red);margin-bottom:6px}
+.beat-cur-v{font-family:var(--beat-serif);font-size:16px;line-height:1.72;color:var(--beat-ink);overflow-wrap:anywhere}
+.beat-cur-tag{display:inline-block;margin-top:10px;font-size:9.5px;letter-spacing:.12em;color:var(--beat-ink-3);border:1px solid var(--beat-line-2);padding:2px 7px;border-radius:2px}
+.beat-cur[data-state="committed"] .beat-cur-tag{color:var(--beat-jade);border-color:var(--beat-jade-line)}
+.beat-custom{margin-top:14px;padding:14px 16px;border:1px solid var(--beat-red-line);border-radius:2px;background:var(--beat-red-soft)}
+.beat-custom-k{font-size:9.5px;letter-spacing:.14em;color:var(--beat-red);margin-bottom:7px}
+.beat-custom-text{font-family:var(--beat-serif);font-size:14.5px;line-height:1.78;color:var(--beat-ink);white-space:pre-wrap;overflow-wrap:anywhere}
+.beat-custom-note{margin-top:8px;font-size:10px;line-height:1.6;color:var(--beat-ink-3)}
+
+/* 其他走向：字母 + 表格式字段 */
+.beat-opts{display:flex;flex-direction:column;gap:0;border-top:1px solid var(--beat-line)}
+.beat-opt{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--beat-line);border-radius:0;background:transparent}
+.beat-opt[data-cur="1"]{background:color-mix(in srgb,var(--beat-red-soft) 60%,transparent);padding-left:10px;border-left:2px solid var(--beat-red)}
+.beat-opt-letter{flex:0 0 24px;width:24px;height:24px;border:1px solid var(--beat-line-2);border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:var(--beat-serif);font-size:12px;color:var(--beat-ink-2);background:transparent}
+.beat-opt[data-cur="1"] .beat-opt-letter{border-color:var(--beat-red-line);color:var(--beat-red)}
+.beat-opt-label{flex:1;min-width:0}
+.beat-opt-heading{margin-bottom:7px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.beat-opt-heading b{font-family:var(--beat-serif);font-size:14px;font-weight:600;letter-spacing:0}
+.beat-style-fit{font-size:9px;letter-spacing:.06em;color:var(--beat-jade);border:1px solid var(--beat-jade-line);padding:1px 5px;border-radius:2px}
+.beat-opt-field{display:flex;gap:10px;font-size:11.5px;line-height:1.65;margin-top:3px}
+.beat-opt-field .beat-k{min-width:58px;font-size:10px}
+.beat-opt-field .beat-v{color:var(--beat-ink-2)}
+.beat-opt-delta .beat-v{font-family:var(--beat-mono);font-size:10.5px}
+.beat-style-why{margin-top:6px;font-size:10px;line-height:1.6;color:var(--beat-ink-3)}
+
+/* 账本与回退 */
+.beat-changes{display:flex;flex-wrap:wrap;gap:6px}
+.beat-change{font-family:var(--beat-mono);font-size:10px;padding:3px 6px;border:1px solid var(--beat-line);border-radius:2px;color:var(--beat-ink-2);background:transparent;overflow-wrap:anywhere}
+.beat-seg{margin-top:10px;font-family:var(--beat-mono);font-size:10px;letter-spacing:.02em;color:var(--beat-ink-3)}
+.beat-impact{display:flex;gap:8px;align-items:flex-start;margin-top:12px;padding:10px 12px;border:1px solid var(--beat-amber-line);border-radius:2px;background:var(--beat-amber-soft);font-size:11px;line-height:1.65;color:var(--beat-amber)}
+.beat-impact svg{flex:none;margin-top:2px}
+.beat-blocked{margin-top:10px;font-size:10.5px;line-height:1.65;color:var(--beat-ink-3)}
+.beat-detail-actions{display:flex;gap:10px;margin-top:20px}
+.beat-detail-actions .beat-btn{flex:1;height:40px;border-radius:2px;font-size:12px;letter-spacing:.04em}
+.beat-detail-actions .beat-btn[data-p="1"]{background:var(--beat-red);border-color:var(--beat-red);color:#fff}
+.beat-detail-actions .beat-btn[data-p="1"]:disabled{background:var(--beat-paper-2);border-color:var(--beat-line-2);color:var(--beat-ink-3)}
+.beat-detail-actions .beat-btn:not([data-p="1"]){background:transparent;border:1px solid var(--beat-line-2);color:var(--beat-ink-2)}
+
+/* 回退 sheet */
+.beat-sheet{border-radius:6px 6px 0 0;border-top:2px solid var(--beat-red);box-shadow:0 -12px 40px color-mix(in srgb,var(--beat-ink) 18%,transparent);padding:20px 22px calc(22px + env(safe-area-inset-bottom))}
+.beat-sheet-sub{font-size:11.5px;line-height:1.7;color:var(--beat-ink-2)}
+.beat-sheet-k{font-size:9.5px;letter-spacing:.1em}
+.beat-sheet-v{font-size:10.5px;line-height:1.65}
+.beat-sheet-stats{border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line)}
+.beat-sheet-actions{margin-top:16px;gap:10px}
+.beat-sheet-actions .beat-btn{min-height:40px;border-radius:2px;font-size:12px}
+.beat-sheet-actions .beat-btn[data-p="1"]{background:var(--beat-red);border-color:var(--beat-red);color:#fff}
+
+/* 时间线 / 体检 / 拒收 / 空态 */
+.beat-tl-entry{padding:13px 0;border-bottom:1px solid var(--beat-line)}
+.beat-tl-time{font-family:var(--beat-ui);font-size:9.5px;letter-spacing:.08em;color:var(--beat-ink-3)}
+.beat-tl-summary{font-family:var(--beat-serif);font-size:12.5px;line-height:1.6;margin-top:4px}
+.beat-tl-node{width:7px;height:7px;border-radius:50%}
+.beat-hl-title{font-family:var(--beat-serif);font-size:14px}
+.beat-hl-item{padding:12px 0;border-bottom:1px solid var(--beat-line)}
+.beat-hl-item-t{font-size:12px;line-height:1.6}
+.beat-hl-item-d{font-size:10.5px;line-height:1.65;color:var(--beat-ink-3)}
+.beat-rejected{padding:12px 14px;border:1px dashed var(--beat-line-2);border-radius:2px;margin-top:10px}
+.beat-rejected-title{font-size:11px;letter-spacing:.06em;color:var(--beat-ink-3)}
+.beat-rejected-reason{font-size:11px;line-height:1.6;color:var(--beat-ink-2)}
+.beat-empty{padding:40px 22px}
+.beat-empty b{font-family:var(--beat-serif);font-size:15px;font-weight:600;display:block;margin-bottom:6px}
+.beat-empty div{font-size:11.5px;line-height:1.7;color:var(--beat-ink-3)}
+.beat-voice-status{display:block;padding:12px 0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line);background:transparent;color:var(--beat-ink-3);line-height:1.6;margin-bottom:2px}
+.beat-voice-status b{display:block;font-weight:600;color:var(--beat-ink-2);font-size:9.5px;letter-spacing:.14em;margin-bottom:3px}
+.beat-voice-status span{display:block;font-size:10.5px}
+.beat-foot{height:36px;padding:0 22px;font-family:var(--beat-mono);font-size:9.5px;letter-spacing:.1em;color:var(--beat-ink-3);border-top:1px solid var(--beat-line-2);background:transparent}
+
+/* 按钮与提示 */
+.beat-btn{height:34px;border-radius:2px;font-size:11.5px;letter-spacing:.02em}
+.beat-banner,.beat-notice,.beat-quarantine{border-radius:2px;font-size:11px;line-height:1.65}
+
+@media (prefers-reduced-motion:reduce){.beat-root *,.beat-root *:before,.beat-root *:after{transition-duration:0s!important;animation-duration:0s!important}}
 `
 
     function formatNumber(value) {
@@ -1267,77 +1361,119 @@ body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,colo
           ]),
           h('div', { className: 'beat-detail-title', id: 'beat-detail-title', key: 'title' }, decision.title),
           h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
-          decision.gate ? h('div', { className: 'beat-gate', key: 'gate' }, [
-            h('div', { className: 'beat-gate-title', key: 'title' }, `命中：${decision.gate.entityLabel || decision.gate.entity} / ${decision.gate.key}${decision.gate.keyLabel ? ` · ${decision.gate.keyLabel}` : ''}`),
-            h('div', { className: 'beat-gate-delta', key: 'delta' }, `${stateName(decision.gate.from, decision.gate.fromLabel)} → ${stateName(decision.gate.to, decision.gate.toLabel)}`),
-            h('div', { className: 'beat-gate-reason', key: 'reason' }, `打断理由：${decision.gate.reason || decision.change || '—'}`),
-          ]) : null,
-          decision.gate?.evidence?.length ? h('div', { className: 'beat-evidence-list', key: 'evidence' }, [
-            h('div', { className: 'beat-evidence-status', 'data-invalid': evidenceValid ? '0' : '1', key: 'status' }, evidenceValid
-              ? (decision.evidenceStatus?.valid === true ? '正文 hash 与引用已校验 · 点开引文可回查' : '证据状态待核验')
-              : `证据已失效，禁止拍板：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '来源无法核验'}`),
-            ...decision.gate.evidence.map((ref, index) => refView(ref, index, 'gate')),
-          ]) : null,
-          h('div', { className: 'beat-cur', 'data-state': decision.chosen ? 'committed' : 'open', key: 'cur' }, [
-            h('span', { className: 'beat-cur-mark', key: 'm' }, decision.chosen ? '✓' : '·'),
-            h('div', { className: 'beat-cur-grow', key: 'g' }, [
-              h('div', { className: 'beat-cur-k', key: 'k' }, '当前选择'),
-              h('div', { className: 'beat-cur-v', key: 'v' }, chosenLabel || '还没拍板'),
-            ]),
-            h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen
-              ? (decision.chosen.source === 'author-custom' ? '作者自定' : '已落账')
-              : (decision.pendingCustom ? '待补 changes' : '待问')),
-          ]),
-          decision.pendingCustom ? h('div', { className: 'beat-custom', key: 'custom-pending' }, [
-            h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 原文已入账，待补结构化变化'),
-            h('div', { className: 'beat-custom-text', key: 't' }, decision.pendingCustom.text),
-            h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完整六要素（含 changes）后落账；补完前不会继续写正文。'),
-          ]) : null,
-          decision.chosen?.source === 'author-custom' ? h('div', { className: 'beat-custom', key: 'custom-committed' }, [
-            h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 已落账'),
-            h('div', { className: 'beat-custom-text', key: 't' }, decision.chosen.customText ?? chosenLabel),
-          ]) : null,
-          h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option, index) => h('div', {
-            className: 'beat-opt',
-            key: option.label,
-            'data-cur': option.label === chosenLabel ? '1' : '0',
-            tabIndex: 0,
-          }, [
-            h('span', { className: 'beat-opt-letter', key: 'letter' }, String.fromCharCode(65 + index)),
-            h('span', { className: 'beat-opt-label', key: 'l' }, [
-              h('div', { className: 'beat-opt-heading', key: 'label' }, [
-                h('b', { key: 'name' }, option.label),
-                option.styleFit ? h('span', { className: 'beat-style-fit', title: option.styleFit.explanation, key: 'fit' }, `贴合 ${option.styleFit.score}/100 · 仅建议`) : null,
+          decision.gate ? h('section', { className: 'beat-sec', key: 'gate' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '为什么停在这里'),
+            h('div', { className: 'beat-gate', key: 'g' }, [
+              h('div', { className: 'beat-gate-row', key: 'title' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '命中：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${decision.gate.entityLabel || decision.gate.entity} / ${decision.gate.key}${decision.gate.keyLabel ? ` · ${decision.gate.keyLabel}` : ''}`),
               ]),
-              h('div', { className: 'beat-opt-field', key: 'action' }, `动作：${option.action || option.impact || '—'}`),
-              h('div', { className: 'beat-opt-field', key: 'costs' }, `代价：${option.costs?.join('；') || '—'}`),
-              h('div', { className: 'beat-opt-field', key: 'outcomes' }, `预期后果：${claimText(option.outcomes) || '—'}`),
-              h('div', { className: 'beat-opt-field', key: 'gain' }, `信息增量：${claimText(option.informationGain) || '—'}`),
-              h('div', { className: 'beat-opt-field', key: 'risks' }, `风险：${claimText(option.risks) || '—'}`),
-              h('div', { className: 'beat-opt-field beat-opt-delta', key: 'delta' }, `状态差分：${(option.changes ?? []).map((change) => `${change.entity}.${change.key}: ${stateName(change.from, change.fromLabel)} → ${stateName(change.to, change.toLabel)}`).join('；') || '—'}`),
-              option.styleFit?.explanation ? h('div', { className: 'beat-style-why', key: 'why' }, option.styleFit.explanation) : null,
+              h('div', { className: 'beat-gate-row', key: 'delta' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '状态：'),
+                h('span', { className: 'beat-v beat-gate-delta', key: 'v' }, `${stateName(decision.gate.from, decision.gate.fromLabel)} → ${stateName(decision.gate.to, decision.gate.toLabel)}`),
+              ]),
+              h('div', { className: 'beat-gate-row', key: 'reason' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '打断理由：'),
+                h('span', { className: 'beat-v beat-gate-reason', key: 'v' }, `${decision.gate.reason || decision.change || '—'}`),
+              ]),
             ]),
-          ]))),
-          changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
-            className: 'beat-change',
-            key: `${change.entity}.${change.key}`,
-            title: `${change.entity}.${change.key} → ${change.to}`,
-          }, `${change.entity}·${change.key} → ${change.to}`))) : null,
-          h('div', { className: 'beat-seg', key: 'seg' }, decision.segment
-            ? `${decision.segment.id} · ${formatNumber(decision.segment.chars)} 字 · 第 ${formatNumber(decision.segment.offsetStart)}–${formatNumber(decision.segment.offsetEnd)} 字`
-            : '无正文锚点'),
-          revert
-            ? h('div', { className: 'beat-impact', key: 'impact' }, [
-              h(WarningIcon, { key: 'icon' }),
-              h('span', { key: 'text' }, `回到这里：作废 ${formatNumber(revert.segments)} 段（${formatNumber(revert.chars)} 字）· 撤回 ${formatNumber(revert.canonEntries)} 条设定 · 目标重落账 · 后续 ${formatNumber(later)} 个重开`),
-            ])
-            : h('div', { className: 'beat-blocked', key: 'blocked' }, blocked === 'legacy'
-              ? '0.6 旧账只记了选择，没有正文锚点；要改请直接改正文。'
-              : blocked === 'stale-evidence'
-                ? `证据已失效，禁止回退或改选：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '请重新登记有效证据。'}`
-              : blocked === 'not-committed'
-                ? '这条决策还没拍板，等模型问到它再定。'
-                : '这条决策还没有登记正文段落，只能查看，不能回退正文。'),
+          ]) : null,
+          decision.gate?.evidence?.length ? h('section', { className: 'beat-sec', key: 'evidence' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '正文依据'),
+            h('div', { className: 'beat-evidence-list', key: 'list' }, [
+              h('div', { className: 'beat-evidence-status', 'data-invalid': evidenceValid ? '0' : '1', key: 'status' }, evidenceValid
+                ? (decision.evidenceStatus?.valid === true ? '正文 hash 与引用已校验 · 点开引文可回查' : '证据状态待核验')
+                : `证据已失效，禁止拍板：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '来源无法核验'}`),
+              ...decision.gate.evidence.map((ref, index) => refView(ref, index, 'gate')),
+            ]),
+          ]) : null,
+          h('section', { className: 'beat-sec beat-sec-choice', key: 'cur-sec' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '你当时的选择'),
+            h('div', { className: 'beat-cur', 'data-state': decision.chosen ? 'committed' : 'open', key: 'cur' }, [
+              h('span', { className: 'beat-cur-mark', key: 'm' }, decision.chosen ? '✓' : '·'),
+              h('div', { className: 'beat-cur-grow', key: 'g' }, [
+                h('div', { className: 'beat-cur-k', key: 'k' }, decision.chosen ? '已拍板' : '还没拍板'),
+                h('div', { className: 'beat-cur-v', key: 'v' }, chosenLabel || '还没有选择'),
+              ]),
+              h('span', { className: 'beat-cur-tag', key: 't' }, decision.chosen
+                ? (decision.chosen.source === 'author-custom' ? '作者自定' : '已落账')
+                : (decision.pendingCustom ? '待补结构' : '待问')),
+            ]),
+            decision.pendingCustom ? h('div', { className: 'beat-custom', key: 'custom-pending' }, [
+              h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 原文已入账，待补结构化变化'),
+              h('div', { className: 'beat-custom-text', key: 't' }, decision.pendingCustom.text),
+              h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完整六要素（含 changes）后落账；补完前不会继续写正文。'),
+            ]) : null,
+            decision.chosen?.source === 'author-custom' ? h('div', { className: 'beat-custom', key: 'custom-committed' }, [
+              h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 已落账'),
+              h('div', { className: 'beat-custom-text', key: 't' }, decision.chosen.customText ?? chosenLabel),
+            ]) : null,
+          ]),
+          h('section', { className: 'beat-sec', key: 'opts-sec' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '其他走向'),
+            h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option, index) => h('div', {
+              className: 'beat-opt',
+              key: option.label,
+              'data-cur': option.label === chosenLabel ? '1' : '0',
+              tabIndex: 0,
+            }, [
+              h('span', { className: 'beat-opt-letter', key: 'letter' }, String.fromCharCode(65 + index)),
+              h('span', { className: 'beat-opt-label', key: 'l' }, [
+                h('div', { className: 'beat-opt-heading', key: 'label' }, [
+                  h('b', { key: 'name' }, option.label),
+                  option.styleFit ? h('span', { className: 'beat-style-fit', title: option.styleFit.explanation, key: 'fit' }, `贴合 ${option.styleFit.score}/100 · 仅建议`) : null,
+                ]),
+                h('div', { className: 'beat-opt-field', key: 'action' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '动作：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${option.action || option.impact || '—'}`),
+                ]),
+                h('div', { className: 'beat-opt-field', key: 'costs' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '代价：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${option.costs?.join('；') || '—'}`),
+                ]),
+                h('div', { className: 'beat-opt-field', key: 'outcomes' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '预期后果：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.outcomes) || '—'}`),
+                ]),
+                h('div', { className: 'beat-opt-field', key: 'gain' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '信息增量：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.informationGain) || '—'}`),
+                ]),
+                h('div', { className: 'beat-opt-field', key: 'risks' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '风险：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.risks) || '—'}`),
+                ]),
+                h('div', { className: 'beat-opt-field beat-opt-delta', key: 'delta' }, [
+                  h('span', { className: 'beat-k', key: 'k' }, '状态差分：'),
+                  h('span', { className: 'beat-v', key: 'v' }, `${(option.changes ?? []).map((change) => `${change.entity}.${change.key}: ${stateName(change.from, change.fromLabel)} → ${stateName(change.to, change.toLabel)}`).join('；') || '—'}`),
+                ]),
+                option.styleFit?.explanation ? h('div', { className: 'beat-style-why', key: 'why' }, option.styleFit.explanation) : null,
+              ]),
+            ]))),
+          ]),
+          h('section', { className: 'beat-sec beat-sec-ledger', key: 'ledger-sec' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '账本与回退'),
+            changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
+              className: 'beat-change',
+              key: `${change.entity}.${change.key}`,
+              title: `${change.entity}.${change.key} → ${change.to}`,
+            }, `${change.entity}·${change.key} → ${change.to}`))) : null,
+            h('div', { className: 'beat-seg', key: 'seg' }, decision.segment
+              ? `${decision.segment.id} · ${formatNumber(decision.segment.chars)} 字 · 第 ${formatNumber(decision.segment.offsetStart)}–${formatNumber(decision.segment.offsetEnd)} 字`
+              : '无正文锚点'),
+            revert
+              ? h('div', { className: 'beat-impact', key: 'impact' }, [
+                h(WarningIcon, { key: 'icon' }),
+                h('span', { key: 'text' }, `回到这里：作废 ${formatNumber(revert.segments)} 段（${formatNumber(revert.chars)} 字）· 撤回 ${formatNumber(revert.canonEntries)} 条设定 · 目标重落账 · 后续 ${formatNumber(later)} 个重开`),
+              ])
+              : h('div', { className: 'beat-blocked', key: 'blocked' }, blocked === 'legacy'
+                ? '0.6 旧账只记了选择，没有正文锚点；要改请直接改正文。'
+                : blocked === 'stale-evidence'
+                  ? `证据已失效，禁止回退或改选：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '请重新登记有效证据。'}`
+                : blocked === 'not-committed'
+                  ? '这条决策还没拍板，等模型问到它再定。'
+                  : '这条决策还没有登记正文段落，只能查看，不能回退正文。'),
+          ]),
           h('div', { className: 'beat-detail-actions', key: 'actions' }, [
             h('button', {
               key: 'rewind', type: 'button', className: 'beat-btn', 'data-p': '1',
@@ -2127,8 +2263,7 @@ body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,colo
                       h('span', { key: 'chg' }, `改 ${formatNumber(decision.chosen?.changes?.length ?? 0)} 条设定`),
                       h('span', { className: 'sep', key: 's1' }, '·'),
                       h('span', { key: 'chars' }, decision.segment ? `${formatNumber(decision.segment.chars)} 字` : '无正文锚点'),
-                      h('span', { className: 'sep', key: 's2' }, '·'),
-                      h('span', { key: 'id' }, decision.id),
+                      decision.chosen?.changes?.length ? h('span', { className: 'sep', key: 's2' }, '·') : null,
                       decision.legacy ? h('span', { key: 'legacy', style: { color: 'var(--beat-warn)' } }, '· 旧账') : null,
                     ]),
                   ]),
