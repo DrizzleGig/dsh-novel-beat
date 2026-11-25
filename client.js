@@ -1257,6 +1257,89 @@ body[data-ds-dark-theme] .beat-root{
 .beat-voice-status{padding:10px 0;border-top:1px solid var(--beat-line);border-bottom:1px solid var(--beat-line)}
 .beat-voice-status b{font-size:9px;letter-spacing:.1em}
 .beat-voice-status span{font-size:10px}
+/* ===== UI v4：对齐 C 的分镜卡布局（分段页签 / 卡片地图 / 当前分镜 / 底部回退） ===== */
+
+/* 分段页签 */
+.beat-tabs{display:flex;gap:3px;margin-top:12px;padding:3px;border:1px solid var(--beat-line-2);border-radius:12px;background:var(--beat-paper-2);border-bottom:1px solid var(--beat-line-2)}
+.beat-tab{flex:1;height:34px;justify-content:center;border-radius:9px;font-size:12px;color:var(--beat-ink-2)}
+.beat-tab[data-a="1"]{background:var(--beat-primary);color:#fff;font-weight:600}
+.beat-tab[data-a="1"]:after{display:none}
+.beat-tab[data-a="1"] b{color:#fff}
+.beat-tab b{transform:none;font-size:9px;opacity:.7}
+
+/* 搜索框与筛选胶囊 */
+.beat-search{height:40px;margin:10px 20px 0;padding:0 14px;border:1px solid var(--beat-line-2);border-radius:999px;background:var(--beat-card)}
+.beat-search:focus-within{box-shadow:0 0 0 2px var(--beat-primary-soft);border-color:var(--beat-primary-line)}
+.beat-filters{padding:10px 20px 8px;gap:8px;flex-wrap:wrap}
+.beat-chip{height:26px;padding:0 12px;border:1px solid var(--beat-line-2);border-radius:999px;background:transparent;font-size:10.5px}
+.beat-chip[data-a="1"]{background:var(--beat-primary-soft);border-color:var(--beat-primary-line);color:var(--beat-primary);font-weight:600}
+.beat-sort{font-size:9px}
+
+/* 章节头 */
+.beat-chap{padding:14px 20px 8px;border-bottom:0}
+.beat-chap-name{font-size:14.5px}
+
+/* 地图：分镜卡网格 */
+.beat-decs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px;padding:4px 20px 14px}
+.beat-dec-block{display:flex;min-width:0}
+.beat-dec{flex:1;border:1px dashed var(--beat-line-2);border-radius:11px;background:var(--beat-card);padding:11px 12px;box-shadow:none;min-height:96px;flex-direction:column;gap:6px}
+.beat-dec:hover{background:var(--beat-card);border-color:var(--beat-primary-line)}
+.beat-dec[data-a="1"]{border:1.5px solid var(--beat-primary);background:var(--beat-card);padding:11px 12px;box-shadow:0 8px 20px color-mix(in srgb,var(--beat-primary) 18%,transparent)}
+.beat-dec:last-child{border-bottom:1px dashed var(--beat-line-2)}
+.beat-seal{width:18px;height:18px;font-size:9.5px}
+.beat-dec-grow{display:flex;flex-direction:column;gap:4px;flex:1}
+.beat-dec-title{font-size:13px;line-height:1.45;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.beat-dec-choice{font-size:10.5px;line-height:1.5;margin-top:0;color:var(--beat-ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.beat-dec-meta{margin-top:auto;font-size:9px;gap:4px;flex-wrap:wrap}
+.beat-dec-right{display:none}
+.beat-dec-meta .beat-kind{font-size:9px}
+
+/* 当前分镜 */
+.beat-stage{margin:2px 20px 18px;border:1px solid var(--beat-line-2);border-radius:14px;background:var(--beat-card);box-shadow:0 14px 34px color-mix(in srgb,var(--beat-ink) 8%,transparent);overflow:hidden}
+.beat-stage-head{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--beat-line)}
+.beat-stage-title{font-size:12px;color:var(--beat-ink-3);letter-spacing:.06em}
+.beat-stage-title b{color:var(--beat-ink);font-family:var(--beat-serif);font-size:14px;font-weight:600}
+.beat-stage-close{width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--beat-ink-3);font-size:15px;cursor:pointer}
+.beat-stage-close:hover{background:var(--beat-paper-2)}
+.beat-stage .beat-detail{margin:0;border:0;border-radius:0;box-shadow:none;background:transparent}
+.beat-stage .beat-detail:before{display:none}
+.beat-stage .beat-detail-top{display:none}
+.beat-detail-inner{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;padding:14px 16px 16px;align-items:start}
+.beat-detail-title,.beat-detail-change,.beat-detail-actions{grid-column:1/-1}
+.beat-detail-title{margin:0 0 2px;font-size:18px}
+.beat-detail-change{margin-bottom:2px}
+.beat-sec{margin-top:0;padding:10px 12px;border:1px solid var(--beat-line);border-radius:11px;background:color-mix(in srgb,var(--beat-paper-2) 32%,transparent)}
+.beat-sec-t{font-size:9px;letter-spacing:.16em;margin-bottom:6px}
+.beat-sec-t:after{display:none}
+.beat-sec-choice{grid-column:1/-1}
+.beat-sec-choice .beat-cur{padding:8px 10px}
+.beat-cur-v{font-size:13.5px;line-height:1.7}
+.beat-opt{border:0;border-radius:0;padding:8px 0;background:transparent;border-top:1px solid var(--beat-line)}
+.beat-opt:first-child{border-top:0;padding-top:0}
+.beat-opt[data-cur="1"]{background:transparent;border-left:0;padding-left:0}
+.beat-opt-heading b{font-size:12.5px}
+.beat-opt-field .beat-k{min-width:50px;font-size:9px}
+.beat-opt-field{font-size:10.5px}
+.beat-sec-ledger{grid-column:1/-1}
+.beat-detail-actions .beat-btn{height:36px}
+.beat-voice-status{margin:8px 20px 0;border-radius:10px;padding:8px 12px}
+/* v4 修正：禁止横向溢出 */
+.beat-list{overflow-x:hidden}
+.beat-stage{max-width:calc(100% - 40px);min-width:0}
+.beat-decs{box-sizing:border-box;max-width:100%}
+.beat-dec-block,.beat-dec{min-width:0;max-width:100%}
+.beat-dec-title,.beat-dec-choice{overflow-wrap:anywhere}
+.beat-detail-inner{min-width:0}
+.beat-sec{min-width:0}
+.beat-v,.beat-custom-text,.beat-cur-v,.beat-opt-field{overflow-wrap:anywhere}
+.beat-stage .beat-detail-inner{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+
+/* v4 修正 2：两列分镜卡 + voice 整行 */
+.beat-decs{grid-template-columns:repeat(2,minmax(0,1fr))}
+.beat-voice-status{grid-column:1/-1;margin:0}
+.beat-dec,.beat-dec-block,.beat-dec-grow,.beat-dec-title,.beat-dec-choice{min-width:0}
+.beat-dec-title,.beat-dec-choice{word-break:break-word}
+
 `
 
     function formatNumber(value) {
@@ -2384,19 +2467,6 @@ body[data-ds-dark-theme] .beat-root{
                     h(ChevronIcon, { key: 'chev' }),
                   ]),
                 ]),
-                active ? h(BeatDecisionDetail, {
-                  key: 'detail',
-                  decision,
-                  chapter: chapter.chapter,
-                  total: decisions.length,
-                  onClose: () => setSelected(null),
-                  returnFocusRef: decisionReturnFocusRef,
-                  onRewrite: rewrite,
-                  onChoose: choose,
-                  busy: Boolean(sheet),
-                  on: data?.on === true,
-                  transactionBlocked: Boolean(data?.transactionStatus?.blocked),
-                }) : null,
               ])
             }),
             rejected.map((entry) => h('div', { className: 'beat-rejected', key: entry.id, 'aria-disabled': 'true' }, [
@@ -2407,6 +2477,37 @@ body[data-ds-dark-theme] .beat-root{
             ])),
           ]))
         }
+        // 当前分镜：选中决策的详情放在地图下方（C 的布局），不再挤在列表里
+        const selectedOwner = filtered.find((chapter) => {
+          const state = chapters[chapter.chapter]
+          return state?.phase === 'ready' && (state.data?.decisions ?? []).some((decision) => decision.id === selected)
+        })
+        if (selectedOwner) {
+          const state = chapters[selectedOwner.chapter]
+          const list = state.data.decisions
+          const decision = list.find((entry) => entry.id === selected)
+          rows.push(h('div', { className: 'beat-stage', key: 'stage' }, [
+            h('div', { className: 'beat-stage-head', key: 'head' }, [
+              h('span', { className: 'beat-stage-title', key: 't' }, ['当前分镜：', h('b', { key: 'b' }, decision.title)]),
+              h('span', { className: 'beat-spacer', key: 's' }),
+              h('button', { key: 'x', type: 'button', className: 'beat-stage-close', onClick: () => setSelected(null), title: '收起详情', 'aria-label': '收起详情' }, '×'),
+            ]),
+            h(BeatDecisionDetail, {
+              key: 'detail',
+              decision,
+              chapter: selectedOwner.chapter,
+              total: list.length,
+              onClose: () => setSelected(null),
+              returnFocusRef: decisionReturnFocusRef,
+              onRewrite: rewrite,
+              onChoose: choose,
+              busy: Boolean(sheet),
+              on: data?.on === true,
+              transactionBlocked: Boolean(data?.transactionStatus?.blocked),
+            }),
+          ]))
+        }
+
         body = h('div', { className: 'beat-list', key: 'list' }, rows)
       }
       if (activeTab === 'timeline') {
