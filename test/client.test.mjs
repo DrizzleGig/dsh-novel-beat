@@ -339,9 +339,9 @@ test('决策详情支持 Escape、Tab 环绕、Shift+Tab 和关闭后回到触�
   assert.equal(dialog.props['aria-modal'], 'true')
   assert.equal(dialog.props['aria-labelledby'], 'beat-detail-title')
   const order = virtualNodes(dialog, (node) => node.type === 'button' || node.type === 'summary' || node.props?.tabIndex === 0)
-  assert.deepEqual(order.map((node) => node.type), ['button', 'summary', 'div', 'button', 'button'])
+  assert.deepEqual(order.map((node) => node.type), ['button', 'section', 'summary', 'button', 'button'])
   assert.ok(order.filter((node) => node.type === 'button').every((node) => node.props.type === 'button'))
-  assert.equal(order[2].props.tabIndex, 0, '详情选项应可通过 Tab 到达')
+  assert.equal(order.find((node) => node.type === 'section').props.tabIndex, 0, '详情选项应可通过 Tab 到达')
 
   const focusables = ['close', 'summary', 'option', 'rewrite', 'choose'].map((name) => ({
     name,

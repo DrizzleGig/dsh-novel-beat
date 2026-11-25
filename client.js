@@ -1340,6 +1340,70 @@ body[data-ds-dark-theme] .beat-root{
 .beat-dec,.beat-dec-block,.beat-dec-grow,.beat-dec-title,.beat-dec-choice{min-width:0}
 .beat-dec-title,.beat-dec-choice{word-break:break-word}
 
+/* ===== UI v5：底色主题 / 旗帜 / 时间线·体检卡片化 ===== */
+
+/* 底色托盘 */
+.beat-paper-dot{display:block;width:13px;height:13px;border-radius:50%;background:var(--beat-paper);border:1px solid var(--beat-line-2);box-shadow:inset 0 0 0 2px var(--beat-card)}
+.beat-papers{position:absolute;top:44px;right:14px;z-index:20;display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--beat-line-2);border-radius:12px;background:var(--beat-card);box-shadow:0 12px 30px color-mix(in srgb,var(--beat-ink) 16%,transparent)}
+.beat-paper-swatch{width:56px;height:40px;border-radius:8px;border:1px solid var(--beat-line-2);cursor:pointer;font-size:9.5px;color:#5b5245;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px}
+.beat-paper-swatch:hover{outline:2px solid var(--beat-primary-line)}
+.beat-paper-swatch[data-paper="xuan"]{background:#f7f1e6}
+.beat-paper-swatch[data-paper="mi"]{background:#faf6ec}
+.beat-paper-swatch[data-paper="hui"]{background:#f1f0ec}
+.beat-paper-swatch[data-paper="qing"]{background:#edf4f0}
+.beat-paper-swatch[data-paper="wu"]{background:#edf0f5;color:#4d5560}
+.beat-paper-swatch[data-paper="ye"]{background:#1e1c18;color:#e9e2d3;border-color:#3a352d}
+
+/* 六套主题：只覆盖 token，结构不动 */
+.beat-root[data-paper="xuan"]{--beat-paper:#f7f1e6;--beat-paper-2:#efe6d4;--beat-card:#fffdf8;--beat-ink:#1c1814;--beat-ink-2:#5f574a;--beat-ink-3:#948974;--beat-line:rgba(28,24,20,.10);--beat-line-2:rgba(28,24,20,.20)}
+.beat-root[data-paper="mi"]{--beat-paper:#faf5e9;--beat-paper-2:#f2ead9;--beat-card:#fffefa;--beat-ink:#211d17;--beat-ink-2:#655c4d;--beat-ink-3:#9a8f7b;--beat-line:rgba(33,29,23,.09);--beat-line-2:rgba(33,29,23,.18)}
+.beat-root[data-paper="hui"]{--beat-paper:#f1f0ec;--beat-paper-2:#e8e6e0;--beat-card:#fbfaf7;--beat-ink:#1b1a17;--beat-ink-2:#5c5a52;--beat-ink-3:#8f8b80;--beat-line:rgba(27,26,23,.09);--beat-line-2:rgba(27,26,23,.18);--beat-primary:#3a566b}
+.beat-root[data-paper="qing"]{--beat-paper:#edf4f0;--beat-paper-2:#e2ede7;--beat-card:#fbfdfb;--beat-ink:#182420;--beat-ink-2:#4e5f57;--beat-ink-3:#83948b;--beat-line:rgba(24,36,32,.09);--beat-line-2:rgba(24,36,32,.18);--beat-primary:#2f5d54}
+.beat-root[data-paper="wu"]{--beat-paper:#edf0f5;--beat-paper-2:#e2e7ef;--beat-card:#fbfcfe;--beat-ink:#1a1f26;--beat-ink-2:#525b67;--beat-ink-3:#89929e;--beat-line:rgba(26,31,38,.09);--beat-line-2:rgba(26,31,38,.18);--beat-primary:#3b5876}
+.beat-root[data-paper="ye"]{--beat-paper:#1e1c18;--beat-paper-2:#26231d;--beat-card:#2b2721;--beat-ink:#f1e9da;--beat-ink-2:#bcb19d;--beat-ink-3:#8d8271;--beat-line:rgba(241,233,218,.10);--beat-line-2:rgba(241,233,218,.20);--beat-primary:#8fb0c8;--beat-red:#e0704f;--beat-jade:#63b79f;--beat-amber:#d9a45a;background-image:none}
+.beat-root[data-paper="ye"] .beat-paper-swatch[data-paper="ye"]{border-color:#c7bda9}
+
+/* 分镜卡的小旗（选中卡右上角） */
+.beat-dec{position:relative}
+.beat-dec[data-a="1"]:after{content:"";position:absolute;top:11px;right:11px;width:15px;height:11px;background:var(--beat-amber);clip-path:polygon(0 0,100% 18%,0 100%)}
+
+/* 时间线：卡片化 */
+.beat-tl-list{padding:10px 20px 16px;display:flex;flex-direction:column;gap:8px}
+.beat-tl-entry{border:1px solid var(--beat-line);border-radius:11px;background:var(--beat-card);padding:11px 13px;border-bottom:1px solid var(--beat-line)}
+.beat-tl-top{display:flex;align-items:baseline;gap:8px}
+.beat-tl-time{font-size:9.5px;color:var(--beat-ink-3);letter-spacing:.08em}
+.beat-tl-kind{font-size:9px;padding:1px 7px;border-radius:999px;border:1px solid var(--beat-line-2);color:var(--beat-ink-3);letter-spacing:.04em}
+.beat-tl-entry[data-type="commit"] .beat-tl-kind{color:var(--beat-jade);border-color:var(--beat-jade-line);background:var(--beat-jade-soft)}
+.beat-tl-entry[data-type="revert"] .beat-tl-kind{color:var(--beat-red);border-color:var(--beat-red-line);background:var(--beat-red-soft)}
+.beat-tl-entry[data-type="plan"] .beat-tl-kind,.beat-tl-entry[data-type="check"] .beat-tl-kind{color:var(--beat-amber);border-color:var(--beat-amber-line);background:var(--beat-amber-soft)}
+.beat-tl-summary{font-size:12.5px;line-height:1.6;margin-top:5px}
+.beat-tl-meta{font-size:9.5px;color:var(--beat-ink-3);margin-top:4px}
+.beat-tl-link{margin-top:8px;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--beat-red-line);background:var(--beat-red-soft);color:var(--beat-red);font-size:10px;cursor:pointer}
+
+/* 体检：计数卡 + 清单 + 问题卡 */
+.beat-hl{padding:10px 20px 16px}
+.beat-hl-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.beat-hl-title{font-size:13px}
+.beat-hl-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:12px}
+.beat-hl-stat{border:1px solid var(--beat-line);border-radius:11px;background:var(--beat-card);padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.beat-hl-stat b{font-size:20px;font-weight:600;line-height:1.1}
+.beat-hl-stat[data-sev="block"] b{color:var(--beat-red)}
+.beat-hl-stat[data-sev="warn"] b{color:var(--beat-amber)}
+.beat-hl-stat[data-sev="info"] b{color:var(--beat-ink-3)}
+.beat-hl-stat span{font-size:9.5px;color:var(--beat-ink-3);letter-spacing:.1em}
+.beat-hl-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:12px}
+.beat-hl-check{border:1px solid var(--beat-line);border-radius:9px;background:var(--beat-card);padding:7px 10px;display:flex;align-items:center;gap:6px;font-size:10.5px}
+.beat-hl-check-n{margin-left:auto;color:var(--beat-ink-3)}
+.beat-hl-issues{display:flex;flex-direction:column;gap:8px}
+.beat-hl-issue{border:1px solid var(--beat-line-2);border-left:2px solid var(--beat-amber);border-radius:11px;background:var(--beat-card);padding:11px 12px}
+.beat-hl-issue[data-sev="block"]{border-left-color:var(--beat-red)}
+.beat-hl-issue-top{display:flex;align-items:baseline;gap:8px}
+.beat-hl-code{font-size:11px;font-weight:600;color:var(--beat-ink)}
+.beat-hl-count{margin-left:auto;font-size:9.5px;color:var(--beat-ink-3)}
+.beat-hl-item{padding:7px 0;border-top:1px solid var(--beat-line)}
+.beat-hl-item-t{font-size:11.5px}
+.beat-hl-item-d{font-size:10px;color:var(--beat-ink-3);margin-top:2px}
+.beat-hl-action{margin-top:8px;height:26px;padding:0 10px;border-radius:999px;border:1px solid var(--beat-primary-line);background:var(--beat-primary-soft);color:var(--beat-primary);font-size:10px;cursor:pointer}
 `
 
     function formatNumber(value) {
@@ -1559,32 +1623,6 @@ body[data-ds-dark-theme] .beat-root{
           ]),
           h('div', { className: 'beat-detail-title', id: 'beat-detail-title', key: 'title' }, decision.title),
           h('div', { className: 'beat-detail-change', key: 'change' }, `这会改变：${decision.change || '—'}`),
-          decision.gate ? h('section', { className: 'beat-sec', key: 'gate' }, [
-            h('h4', { className: 'beat-sec-t', key: 't' }, '为什么停在这里'),
-            h('div', { className: 'beat-gate', key: 'g' }, [
-              h('div', { className: 'beat-gate-row', key: 'title' }, [
-                h('span', { className: 'beat-k', key: 'k' }, '涉及：'),
-                h('span', { className: 'beat-v', key: 'v' }, `${decision.gate.entityLabel || '这一处'}${decision.gate.keyLabel ? `·${decision.gate.keyLabel}` : ''}`),
-              ]),
-              h('div', { className: 'beat-gate-row', key: 'delta' }, [
-                h('span', { className: 'beat-k', key: 'k' }, '变化：'),
-                h('span', { className: 'beat-v beat-gate-delta', key: 'v' }, `${decision.gate.fromLabel || '原来的样子'} → ${decision.gate.toLabel || '新的样子'}`),
-              ]),
-              h('div', { className: 'beat-gate-row', key: 'reason' }, [
-                h('span', { className: 'beat-k', key: 'k' }, '打断理由：'),
-                h('span', { className: 'beat-v beat-gate-reason', key: 'v' }, `${decision.gate.reason || decision.change || '—'}`),
-              ]),
-            ]),
-          ]) : null,
-          decision.gate?.evidence?.length ? h('section', { className: 'beat-sec', key: 'evidence' }, [
-            h('h4', { className: 'beat-sec-t', key: 't' }, '原文依据'),
-            h('div', { className: 'beat-evidence-list', key: 'list' }, [
-              h('div', { className: 'beat-evidence-status', 'data-invalid': evidenceValid ? '0' : '1', key: 'status' }, evidenceValid
-                ? (decision.evidenceStatus?.valid === true ? '正文 hash 与引用已校验 · 点开引文可回查' : '证据状态待核验')
-                : `证据已失效，禁止拍板：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '来源无法核验'}`),
-              ...decision.gate.evidence.map((ref, index) => refView(ref, index, 'gate')),
-            ]),
-          ]) : null,
           h('section', { className: 'beat-sec beat-sec-choice', key: 'cur-sec' }, [
             h('h4', { className: 'beat-sec-t', key: 't' }, '你当时怎么定的'),
             h('div', { className: 'beat-cur', 'data-state': decision.chosen ? 'committed' : 'open', key: 'cur' }, [
@@ -1604,48 +1642,70 @@ body[data-ds-dark-theme] .beat-root{
               h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完整六要素（含 changes）后落账；补完前不会继续写正文。'),
             ]) : null,
           ]),
-          h('section', { className: 'beat-sec', key: 'opts-sec' }, [
-            h('h4', { className: 'beat-sec-t', key: 't' }, '另外几条路'),
-            h('div', { className: 'beat-opts', key: 'opts' }, (decision.options ?? []).map((option, index) => h('div', {
-              className: 'beat-opt',
-              key: option.label,
-              'data-cur': option.label === chosenLabel ? '1' : '0',
-              tabIndex: 0,
-            }, [
-              h('span', { className: 'beat-opt-letter', key: 'letter' }, String.fromCharCode(65 + index)),
-              h('span', { className: 'beat-opt-label', key: 'l' }, [
-                h('div', { className: 'beat-opt-heading', key: 'label' }, [
-                  h('b', { key: 'name' }, option.label),
-                  option.styleFit ? h('span', { className: 'beat-style-fit', title: option.styleFit.explanation, key: 'fit' }, `贴合 ${option.styleFit.score}/100 · 仅建议`) : null,
-                ]),
-                h('div', { className: 'beat-opt-field', key: 'action' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '要做的：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${option.action || option.impact || '—'}`),
-                ]),
-                h('div', { className: 'beat-opt-field', key: 'costs' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '要付的：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${option.costs?.join('；') || '—'}`),
-                ]),
-                h('div', { className: 'beat-opt-field', key: 'outcomes' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '接下来：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.outcomes) || '—'}`),
-                ]),
-                h('div', { className: 'beat-opt-field', key: 'gain' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '你会知道：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.informationGain) || '—'}`),
-                ]),
-                h('div', { className: 'beat-opt-field', key: 'risks' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '可能反噬：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.risks) || '—'}`),
-                ]),
-                h('div', { className: 'beat-opt-field beat-opt-delta', key: 'delta' }, [
-                  h('span', { className: 'beat-k', key: 'k' }, '故事的变化：'),
-                  h('span', { className: 'beat-v', key: 'v' }, `${(option.changes ?? []).map((change) => `${change.entityLabel || '这一处'}${change.keyLabel ? `·${change.keyLabel}` : ''}：${change.fromLabel || '原来的样子'} → ${change.toLabel || '新的样子'}`).join('；') || '—'}`),
-                ]),
-                option.styleFit?.explanation ? h('div', { className: 'beat-style-why', key: 'why' }, option.styleFit.explanation) : null,
+          decision.gate ? h('section', { className: 'beat-sec', key: 'gate' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '为什么停在这里'),
+            h('div', { className: 'beat-gate', key: 'g' }, [
+              h('div', { className: 'beat-gate-row', key: 'title' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '涉及：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${decision.gate.entityLabel || '这一处'}${decision.gate.keyLabel ? `·${decision.gate.keyLabel}` : ''}`),
               ]),
-            ]))),
-          ]),
+              h('div', { className: 'beat-gate-row', key: 'delta' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '变化：'),
+                h('span', { className: 'beat-v beat-gate-delta', key: 'v' }, `${decision.gate.fromLabel || '原来的样子'} → ${decision.gate.toLabel || '新的样子'}`),
+              ]),
+              h('div', { className: 'beat-gate-row', key: 'reason' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '打断理由：'),
+                h('span', { className: 'beat-v beat-gate-reason', key: 'v' }, `${decision.gate.reason || decision.change || '—'}`),
+              ]),
+            ]),
+          ]) : null,
+          (decision.options ?? []).map((option, index) => h('section', {
+            className: 'beat-sec beat-sec-opt',
+            key: `opt-${option.label}`,
+            tabIndex: 0,
+          }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, `走向 ${String.fromCharCode(65 + index)}`),
+            h('div', { className: 'beat-opt-label', key: 'l' }, [
+              h('div', { className: 'beat-opt-heading', key: 'label' }, [
+                h('b', { key: 'name' }, option.label),
+                option.styleFit ? h('span', { className: 'beat-style-fit', title: option.styleFit.explanation, key: 'fit' }, `贴合 ${option.styleFit.score}/100 · 仅建议`) : null,
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'action' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '要做的：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${option.action || option.impact || '—'}`),
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'costs' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '要付的：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${option.costs?.join('；') || '—'}`),
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'outcomes' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '接下来：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.outcomes) || '—'}`),
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'gain' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '你会知道：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.informationGain) || '—'}`),
+              ]),
+              h('div', { className: 'beat-opt-field', key: 'risks' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '可能反噬：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${claimText(option.risks) || '—'}`),
+              ]),
+              h('div', { className: 'beat-opt-field beat-opt-delta', key: 'delta' }, [
+                h('span', { className: 'beat-k', key: 'k' }, '故事的变化：'),
+                h('span', { className: 'beat-v', key: 'v' }, `${(option.changes ?? []).map((change) => `${change.entityLabel || '这一处'}${change.keyLabel ? `·${change.keyLabel}` : ''}：${change.fromLabel || '原来的样子'} → ${change.toLabel || '新的样子'}`).join('；') || '—'}`),
+              ]),
+              option.styleFit?.explanation ? h('div', { className: 'beat-style-why', key: 'why' }, option.styleFit.explanation) : null,
+            ]),
+          ])),
+          decision.gate?.evidence?.length ? h('section', { className: 'beat-sec', key: 'evidence' }, [
+            h('h4', { className: 'beat-sec-t', key: 't' }, '原文依据'),
+            h('div', { className: 'beat-evidence-list', key: 'list' }, [
+              h('div', { className: 'beat-evidence-status', 'data-invalid': evidenceValid ? '0' : '1', key: 'status' }, evidenceValid
+                ? (decision.evidenceStatus?.valid === true ? '正文 hash 与引用已校验 · 点开引文可回查' : '证据状态待核验')
+                : `证据已失效，禁止拍板：${decision.evidenceStatus?.message ?? decision.evidenceStatus?.code ?? '来源无法核验'}`),
+              ...decision.gate.evidence.map((ref, index) => refView(ref, index, 'gate')),
+            ]),
+          ]) : null,
           h('section', { className: 'beat-sec beat-sec-ledger', key: 'ledger-sec' }, [
             h('h4', { className: 'beat-sec-t', key: 't' }, '账本与回退'),
             changes.length > 0 ? h('div', { className: 'beat-changes', key: 'changes' }, changes.map((change) => h('span', {
@@ -1912,6 +1972,16 @@ body[data-ds-dark-theme] .beat-root{
       const [healthChapter, setHealthChapter] = React.useState(null)
       const [search, setSearch] = React.useState({ phase: 'idle', q: '', data: null, error: null })
       const [searchQ, setSearchQ] = React.useState('')
+      const PAPERS = [['xuan', '宣纸'], ['mi', '米白'], ['hui', '灰白'], ['qing', '青瓷'], ['wu', '淡雾'], ['ye', '夜墨']]
+      const [paper, setPaper] = React.useState(() => {
+        try { return localStorage.getItem('dsh-novel-beat:paper') || 'xuan' } catch { return 'xuan' }
+      })
+      const [paperOpen, setPaperOpen] = React.useState(false)
+      const choosePaper = (name) => {
+        setPaper(name)
+        setPaperOpen(false)
+        try { localStorage.setItem('dsh-novel-beat:paper', name) } catch { /* 隐私模式忽略 */ }
+      }
       const searchTimer = React.useRef(null)
       const searchSeq = React.useRef(0)
       const seq = React.useRef(0)
@@ -2242,6 +2312,14 @@ body[data-ds-dark-theme] .beat-root{
             key: 'refresh', type: 'button', className: 'beat-icon', title: '刷新账本',
             onClick: () => refreshAll(), 'aria-label': '刷新账本',
           }, h(RefreshIcon)),
+          h('button', {
+            key: 'paper', type: 'button', className: 'beat-icon', title: '底色主题',
+            onClick: () => setPaperOpen((open) => !open), 'aria-label': '底色主题',
+          }, h('span', { className: 'beat-paper-dot', 'aria-hidden': 'true' })),
+          paperOpen ? h('div', { className: 'beat-papers', key: 'papers', role: 'menu', 'aria-label': '底色主题' }, PAPERS.map(([name, label]) => h('button', {
+            key: name, type: 'button', className: 'beat-paper-swatch', 'data-paper': name,
+            title: label, 'aria-label': label, onClick: () => choosePaper(name),
+          }, label))) : null,
         ]),
         h('div', { className: 'beat-eyes', key: 'eyes' }, [
           h('div', { className: 'beat-chap-grow', key: 'grow' }, [
@@ -2673,6 +2751,7 @@ body[data-ds-dark-theme] .beat-root{
 
       return h('div', {
         className: 'beat-root',
+        'data-paper': paper,
       }, [
         h('style', { key: 'css' }, BEAT_PANEL_CSS),
         header,
