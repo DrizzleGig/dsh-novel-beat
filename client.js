@@ -1291,7 +1291,7 @@ body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,colo
           decision.pendingCustom ? h('div', { className: 'beat-custom', key: 'custom-pending' }, [
             h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 原文已入账，待补结构化变化'),
             h('div', { className: 'beat-custom-text', key: 't' }, decision.pendingCustom.text),
-            h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完 changes 后落账；补完前不会继续写正文。'),
+            h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完整六要素（含 changes）后落账；补完前不会继续写正文。'),
           ]) : null,
           decision.chosen?.source === 'author-custom' ? h('div', { className: 'beat-custom', key: 'custom-committed' }, [
             h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 已落账'),
@@ -2087,7 +2087,7 @@ body[data-ds-dark-theme] .beat-root{background-image:linear-gradient(180deg,colo
               : decisions.map((decision) => {
               const active = selected === decision.id
               const decisionState = decision.legacy ? 'legacy' : (decision.status === 'committed' ? 'committed' : 'open')
-              const decisionStatus = decision.legacy ? '旧账' : (decision.status === 'committed' ? '已拍板' : '待拍板')
+              const decisionStatus = decision.legacy ? '旧账' : (decision.status === 'committed' ? '已拍板' : (decision.pendingCustom ? '待补结构' : '待拍板'))
               return h('div', { className: 'beat-dec-block', key: decision.id }, [
                 h('div', {
                   className: 'beat-dec',
