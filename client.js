@@ -1206,6 +1206,8 @@ body[data-ds-dark-theme] .beat-root{
       ['NO_ANCHOR', '旧账锚点'],
     ]
 
+    const HEALTH_LABELS = Object.fromEntries(HEALTH_CHECKS)
+
     function timelineFilterMatch(entry, filter) {
       if (filter === 'all') return true
       if (filter === 'commit') return entry.type === 'commit'
@@ -1402,11 +1404,13 @@ body[data-ds-dark-theme] .beat-root{
             decision.pendingCustom ? h('div', { className: 'beat-custom', key: 'custom-pending' }, [
               h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 原文已入账，待补结构化变化'),
               h('div', { className: 'beat-custom-text', key: 't' }, decision.pendingCustom.text),
+              decision.pendingCustom.truncated ? h('div', { className: 'beat-custom-note', key: 'trunc' }, '原文较长，面板只显示前 2000 字；完整原文在账本里。') : null,
               h('div', { className: 'beat-custom-note', key: 'n' }, '模型补完整六要素（含 changes）后落账；补完前不会继续写正文。'),
             ]) : null,
             decision.chosen?.source === 'author-custom' ? h('div', { className: 'beat-custom', key: 'custom-committed' }, [
               h('div', { className: 'beat-custom-k', key: 'k' }, '作者自定 · 已落账'),
               h('div', { className: 'beat-custom-text', key: 't' }, decision.chosen.customText ?? chosenLabel),
+              decision.chosen.customTruncated ? h('div', { className: 'beat-custom-note', key: 'trunc' }, '原文较长，面板只显示前 2000 字；完整原文在账本里。') : null,
             ]) : null,
           ]),
           h('section', { className: 'beat-sec', key: 'opts-sec' }, [
@@ -2349,9 +2353,7 @@ body[data-ds-dark-theme] .beat-root{
                   }
                   const meta = []
                   if (entry.chapter) meta.push(`第 ${entry.chapter} 章`)
-                  if (entry.decisionId) meta.push(entry.decisionId)
                   if (entry.chars) meta.push(`${formatNumber(entry.chars)} 字`)
-                  if (entry.revisionId) meta.push(entry.revisionId)
                   return h('div', {
                     className: 'beat-tl-entry', key: entry.eventId, 'data-type': entry.type,
                     role: jumpable ? 'button' : undefined,
@@ -2436,7 +2438,7 @@ body[data-ds-dark-theme] .beat-root{
               ? h('div', { className: 'beat-hl-ok', key: 'ok' }, [h('span', { className: 'beat-hl-ok-mark', key: 'm' }, '✓'), h('div', { key: 't' }, [h('b', { key: 'b' }, '没有发现结构问题'), h('span', { key: 's' }, '这一章可以继续往下写。')])])
               : h('div', { className: 'beat-hl-issues', key: 'issues' }, (hl.issues ?? []).map((issue) => h('div', { className: 'beat-hl-issue', key: issue.code, 'data-sev': issue.severity }, [
                 h('div', { className: 'beat-hl-issue-top', key: 'top' }, [
-                  h('span', { className: 'beat-hl-code', key: 'code' }, issue.code),
+                  h('span', { className: 'beat-hl-code', key: 'code' }, HEALTH_LABELS[issue.code] ?? issue.code),
                   h('span', { className: 'beat-hl-count', key: 'count' }, `${formatNumber(issue.count)} 条`),
                 ]),
                 ...(issue.items ?? []).slice(0, 3).map((item) => h('div', { className: 'beat-hl-item', key: item.id }, [

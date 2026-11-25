@@ -557,6 +557,13 @@ export async function apply(ctx) {
           const cached = gateCache.get(agent.id)
           const roots = (cached?.bodyRoots ?? DEFAULT_BODY_ROOTS).join('、') || '（空：只保护已登记段落）'
           const chapter = cached?.chapter ? `第 ${cached.chapter} 章` : '还没登记本章决策'
+          const pendingCustomCount = cached?.chapter
+            ? (cached?.chapters?.[String(cached.chapter)]?.pendingCustom ?? 0)
+            : 0
+          const pendingSuffix = [
+            cached?.open ? `还有 ${cached.open} 个决策没拍板` : '',
+            pendingCustomCount > 0 ? `${pendingCustomCount} 条作者自定待补六要素` : '',
+          ].filter(Boolean).join('，')
           const conductor = conductorInstalled(ctx)
             ? (effectiveOn(ctx, false, agent.id)
               ? '- 故事总控：开（本会话由它接管；你的开关只作独立模式偏好）'
@@ -568,7 +575,7 @@ export async function apply(ctx) {
               `拍板模式：${state?.on ? '开' : '关'}（独立开关：${cached?.manual ? '开' : '关'}）`,
               conductor,
               `- 受保护正文目录：${roots}`,
-              `- 当前进度：${chapter}${cached?.open ? `，还有 ${cached.open} 个决策没拍板` : ''}`,
+              `- 当前进度：${chapter}${pendingSuffix ? `，${pendingSuffix}` : ''}`,
               '- 开关：/beat on | /beat off；改保护目录：/beat body 正文|/beat body reset',
               '- 选项写法：/beat voice auto（跟随已确认文风）| /beat voice off（中性）',
               '- 段落：/beat list（列本章段落）；/beat revert [段号]（退这一段及其后所有段，重写）',
@@ -599,15 +606,18 @@ export async function apply(ctx) {
         if (action === 'voice') {
           // 0.11.0：选项写法是否跟随已确认文风。auto=跟随档案（默认），off=强制中性。
           const target = (parts[1] || 'status').toLowerCase()
-          if (target === 'on' || target === 'off' || target === 'auto') {
-            const saved = await setSessionVoice(dir, agent.id, target)
+          if (target === 'off' || target === 'auto') {
+            await setSessionVoice(dir, agent.id, target)
             await refreshAgent(agent)
             return {
               kind: 'success',
               text: target === 'off'
-                ? '选项写法：中性。文风不再影响选项内容（追问时仍可 /beat voice auto 恢复）。'
+                ? '选项写法：中性。文风不再影响选项内容（恢复用 /beat voice auto）。'
                 : '选项写法：跟随已确认文风（没有已确认档案时自动中性）。',
             }
+          }
+          if (target === 'on') {
+            return { kind: 'error', text: '没有 /beat voice on 这个档位：用 /beat voice auto（跟随已确认档案）或 /beat voice off（中性）。' }
           }
           const state = await getSessionState(dir, agent.id)
           const active = await readActiveBook(dir)

@@ -258,3 +258,28 @@ test('readChapterTitles 只读目录名，不读正文', async (t) => {
   assert.equal(titles.get(10), '太子雪清河')
   assert.equal(titles.get(2), '天斗皇宫 武魂觉醒仪式')
 })
+
+test('作者原文超过 2000 字时，面板截断并标记（完整原文仍留在账本）', () => {
+  const long = '字'.repeat(2500)
+  const data = {
+    schemaVersion: 3,
+    book: BOOK,
+    decisions: [{
+      id: 'b12-1', chapter: 12, title: '自定义走向', kind: '分叉', change: '',
+      status: 'committed', legacyReceipt: false, segmentId: 's-12', requestId: 'q12',
+      options: [{ label: 'A', changes: [] }, { label: 'B', changes: [] }],
+      chosen: { label: '自定义', source: 'author-custom', custom: true, customText: long, changes: [] },
+      answerText: long,
+    }],
+    segments: [{
+      id: 's-12', chapter: 12, decisionIds: ['b12-1'], file: '正文/第12章.md',
+      offsetStart: 0, offsetEnd: 10, chars: 10, status: 'committed',
+    }],
+    canon: [], requests: [], revisions: [], chapters: {}, tasks: [],
+  }
+  const chapter = buildChapter({ book: BOOK, data, chapter: 12 })
+  const decision = chapter.decisions[0]
+  assert.equal(decision.chosen.customTruncated, true)
+  assert.equal(decision.chosen.customText.length, 2001, '2000 字 + 省略号')
+  assert.equal(decision.answerTextTruncated, true)
+})
