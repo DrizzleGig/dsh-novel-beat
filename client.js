@@ -5,7 +5,7 @@ window.__ModuleLoader__.load({
     const h = React.createElement
 
     // 版本号只在这里出现一次；test/client-version.test.mjs 会核对它和 package.json 一致。
-    const PLUGIN_VERSION = '0.11.0'
+    const PLUGIN_VERSION = '0.12.0'
 
     // Keep this contract in sync with lib/remote-contract.js. It is duplicated
     // because this browser factory cannot import a relative Host module.
