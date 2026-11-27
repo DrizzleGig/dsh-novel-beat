@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Beat",
-    "description": "AI writes the prose; you decide where the story goes. The Beat panel maps every decision by chapter, previews what a change really costs (prose cut, segments voided, canon rolled back, later decisions reopened), then reverts safely and keeps the old draft readable. Off by default; it never writes your prose."
+    "description": "AI 写小说，关键剧情由你拍板。右栏「拍板台」按章看全书决策：改选前先看会删多少字、作废几段、撤回哪些设定、重开哪些决策，确认后安全回退，旧正文留档可查。默认关闭，不写正文。"
   }
 }
