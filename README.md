@@ -1,5 +1,9 @@
 # dsh-novel-beat｜拍板
 
+[![npm version](https://img.shields.io/npm/v/dsh-novel-beat)](https://www.npmjs.com/package/dsh-novel-beat)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/DrizzleGig/dsh-novel-beat/blob/main/LICENSE)
+[![stars](https://img.shields.io/github/stars/DrizzleGig/dsh-novel-beat)](https://github.com/DrizzleGig/dsh-novel-beat/stargazers)
+
 **关键剧情由作者决定，长篇账本负责留痕。**
 
 拍板识别会改变故事走向的分叉，记录选定方向、相关事实与后续义务。它服务于作者已有的写作流程，不替作者生成整章正文。
