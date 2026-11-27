@@ -1,4 +1,11 @@
 # Changelog
+
+## 0.12.2 — 2026-11-27 · voice 人物画像只读建议（本地版，未发布）
+
+- `loadVoiceGuidance` 在 voice 暴露 `voice.personaBrief` 时可选读取 `getPersonaBrief`，把已确认人物卡作为 `personaText` 随工具结果回传；只建议，不改 gate/事实/差分/作者选择。
+- 250ms 独立超时；无 capability、无卡、异常都降级为 `personaText:null`；测试 `voice-guidance` 7/7。
+- 本轮未改拍板/账本/gate；`npm test` 426/426。
+
 ## 0.12.1 — 补丁（2026-11-25）
 
 ### 修复（来自 0.12.0 的 Codex 只读审查）
