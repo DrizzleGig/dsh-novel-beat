@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.12.2 — 2026-11-27 · voice 人物画像只读建议（本地版，未发布）
+## 0.12.3 — 2026-11-27 · README 徽章补发
+
+- README 顶部补 npm / license / GitHub Stars 三枚可点击徽章；无运行时代码变更。
+- `npm test` 沿用 0.12.2：426/426。
+
+## 0.12.2 — 2026-11-27 · voice 人物画像只读建议（已发布）
 
 - `loadVoiceGuidance` 在 voice 暴露 `voice.personaBrief` 时可选读取 `getPersonaBrief`，把已确认人物卡作为 `personaText` 随工具结果回传；只建议，不改 gate/事实/差分/作者选择。
 - 250ms 独立超时；无 capability、无卡、异常都降级为 `personaText:null`；测试 `voice-guidance` 7/7。
